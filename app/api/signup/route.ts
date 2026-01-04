@@ -26,16 +26,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Hash password (in production, use proper password hashing)
-        // For now, we'll store it as-is since this is a prototype
-        // const hashedPassword = await hash(password, 10);
+        // Map frontend role to database role
+        const roleMap: Record<string, string> = {
+            'buyer': 'USER',
+            'seller': 'FARMER',
+            'both': 'FARMER', // If both, prioritize seller/farmer role
+        };
+
+        const dbRole = roleMap[role?.toLowerCase()] || 'USER';
 
         // Create user with wallet
         const user = await prisma.user.create({
             data: {
                 email,
                 name: `${firstName} ${lastName}`,
-                role: role?.toUpperCase() || 'FARMER',
+                role: dbRole,
                 isKycVerified: false,
                 wallet: {
                     create: {
