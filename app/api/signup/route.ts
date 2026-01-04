@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
     try {
@@ -14,59 +14,84 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if user already exists
-        const existingUser = await prisma.user.findUnique({
-            where: { email },
+        // Map frontend role to database role
+        const roleMap: Record<string, string> = {
+            'buyer': 'USER',
+            'seller': 'FARMER',
+            'both': 'FARMER',
+        };
+
+        const dbRole = roleMap[role?.toLowerCase()] || 'USER';
+
+        // Create Firebase Auth user
+        const userRecord = await adminAuth.createUser({
+            email,
+            password,
+            displayName: `${firstName} ${lastName}`,
+            emailVerified: false,
         });
 
-        if (existingUser) {
+        // Create user document in Firestore
+        const userData = {
+            id: userRecord.uid,
+            email,
+            name: `${firstName} ${lastName}`,
+            firstName,
+            lastName,
+            role: dbRole,
+            isKycVerified: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        await adminDb.collection('users').doc(userRecord.uid).set(userData);
+
+        // Create wallet for user
+        const walletData = {
+            userId: userRecord.uid,
+            balanceNGN: 0,
+            balanceUSD: 0,
+            balanceUSDT: 0,
+            balanceUSDC: 0,
+            createdAt: new Date().toISOString(),
+        };
+
+        await adminDb.collection('wallets').doc(userRecord.uid).set(walletData);
+
+        return NextResponse.json({
+            success: true,
+            user: {
+                id: userRecord.uid,
+                email: userRecord.email,
+                name: userData.name,
+                role: userData.role,
+            },
+        });
+    } catch (error: any) {
+        console.error('Signup error:', error);
+
+        // Handle specific Firebase errors
+        if (error.code === 'auth/email-already-exists') {
             return NextResponse.json(
                 { error: 'User with this email already exists' },
                 { status: 409 }
             );
         }
 
-        // Map frontend role to database role
-        const roleMap: Record<string, string> = {
-            'buyer': 'USER',
-            'seller': 'FARMER',
-            'both': 'FARMER', // If both, prioritize seller/farmer role
-        };
+        if (error.code === 'auth/invalid-email') {
+            return NextResponse.json(
+                { error: 'Invalid email address' },
+                { status: 400 }
+            );
+        }
 
-        const dbRole = roleMap[role?.toLowerCase()] || 'USER';
+        if (error.code === 'auth/weak-password') {
+            return NextResponse.json(
+                { error: 'Password is too weak. Use at least 6 characters.' },
+                { status: 400 }
+            );
+        }
 
-        // Create user with wallet
-        const user = await prisma.user.create({
-            data: {
-                email,
-                name: `${firstName} ${lastName}`,
-                role: dbRole,
-                isKycVerified: false,
-                wallet: {
-                    create: {
-                        balanceNGN: 0,
-                        balanceUSD: 0,
-                        balanceUSDT: 0,
-                        balanceUSDC: 0,
-                    },
-                },
-            },
-            include: {
-                wallet: true,
-            },
-        });
-
-        return NextResponse.json({
-            success: true,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-            },
-        });
-    } catch (error) {
-        console.error('Signup error:', error);
         return NextResponse.json(
             { error: 'Failed to create account. Please try again.' },
             { status: 500 }
