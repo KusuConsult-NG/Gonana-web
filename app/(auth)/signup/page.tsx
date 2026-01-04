@@ -190,7 +190,7 @@ export default function SignupPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">
-                                I want to
+                                I am a
                             </label>
                             <div className="grid grid-cols-3 gap-3">
                                 {["buyer", "seller", "both"].map((role) => (
