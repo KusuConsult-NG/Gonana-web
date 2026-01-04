@@ -1,5 +1,7 @@
 "use client";
 
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, Wallet, Moon, Sun } from "lucide-react";
@@ -7,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 export default function SignupPage() {
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -31,9 +34,29 @@ export default function SignupPage() {
             alert("Please agree to the terms and conditions");
             return;
         }
+
         setIsLoading(true);
-        // TODO: Implement signup logic
-        setTimeout(() => setIsLoading(false), 2000);
+
+        try {
+            // Sign up by logging in with credentials
+            // The auth system will auto-create the user on first login
+            const result = await signIn("credentials", {
+                email: formData.email,
+                password: formData.password,
+                redirect: false,
+            });
+
+            if (result?.ok) {
+                router.push("/"); // Redirect to marketplace home
+            } else {
+                alert("Signup failed. Please try again.");
+            }
+        } catch (error) {
+            console.error("Signup error:", error);
+            alert("An error occurred during signup");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const toggleTheme = () => {
@@ -174,8 +197,8 @@ export default function SignupPage() {
                                     <label
                                         key={role}
                                         className={`flex items-center justify-center px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all ${formData.role === role
-                                                ? "border-primary bg-primary/10 text-primary font-medium"
-                                                : "border-border-light dark:border-border-dark text-secondary-text-light dark:text-secondary-text-dark hover:border-primary/50"
+                                            ? "border-primary bg-primary/10 text-primary font-medium"
+                                            : "border-border-light dark:border-border-dark text-secondary-text-light dark:text-secondary-text-dark hover:border-primary/50"
                                             }`}
                                     >
                                         <input

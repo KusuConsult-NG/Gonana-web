@@ -95,7 +95,7 @@ export default function LoginPage() {
 
                         <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8">
                             <button className="flex-1 pb-4 text-center font-medium text-primary border-b-2 border-primary focus:outline-none">Log In</button>
-                            <button className="flex-1 pb-4 text-center font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition-colors">Sign Up</button>
+                            <Link href="/signup" className="flex-1 pb-4 text-center font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition-colors">Sign Up</Link>
                         </div>
 
                         <form className="space-y-6" onSubmit={async (e) => {
@@ -110,7 +110,7 @@ export default function LoginPage() {
 
                             if (result?.ok) {
                                 setLoginError("");
-                                router.push("/sell"); // Redirect to Sell page for demo
+                                router.push("/"); // Redirect to marketplace home
                             } else {
                                 setLoginError("Invalid email or password");
                             }
