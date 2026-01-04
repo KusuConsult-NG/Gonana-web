@@ -1,0 +1,415 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { CreditCard, Wallet, CheckCircle, ChevronRight, Lock, Sprout } from "lucide-react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { useWallet } from "@/context/WalletContext";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/context/CartContext";
+import { PriceTag } from "@/components/ui/PriceTag";
+import { initializePaystackPayment, convertToKobo } from "@/lib/paystack";
+
+export default function CheckoutPage() {
+    const { isKycVerified, balances, deduct, exchangeRate } = useWallet();
+    const { data: session } = useSession();
+    const router = useRouter();
+    const [paymentMethod, setPaymentMethod] = useState<"fiat" | "crypto">("fiat");
+    const [selectedWalletCurrency, setSelectedWalletCurrency] = useState<"NGN" | "USDT" | "USDC">("NGN");
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [deliveryMethod, setDeliveryMethod] = useState<"logistics" | "pickup">("logistics"); // New state for delivery method
+    const [shippingAddress, setShippingAddress] = useState("Farm #42, Agadez Region, Niger"); // Mock address for now
+
+    const { items, subtotal, clearCart } = useCart();
+
+    // Derived state
+    const shippingCost = deliveryMethod === "logistics" ? 2500 : 0; // Simplified logic mapping to API
+    const tax = subtotal * 0.05;
+    const total = subtotal + shippingCost + tax;
+
+    const handlePay = async () => {
+        if (!session) {
+            alert("Please login to complete your purchase.");
+            router.push("/login?callbackUrl=/checkout");
+            return;
+        }
+
+        setIsProcessing(true);
+
+        try {
+            if (paymentMethod === "fiat") {
+                // Paystack Card Payment
+                const userEmail = session.user?.email || "buyer@gonana.farm";
+
+                initializePaystackPayment(
+                    {
+                        email: userEmail,
+                        amount: convertToKobo(total), // Convert NGN to kobo
+                        currency: "NGN",
+                        metadata: {
+                            cart_items: items.map(item => ({
+                                id: item.id,
+                                name: item.name,
+                                quantity: item.quantity,
+                                price: item.price
+                            })),
+                            shipping_address: shippingAddress,
+                            delivery_method: deliveryMethod,
+                        },
+                    },
+                    async (response) => {
+                        // Payment successful - verify and create order
+                        console.log("Payment successful:", response);
+
+                        try {
+                            // Create order with payment reference
+                            const res = await fetch("/api/orders", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    items,
+                                    address: shippingAddress,
+                                    logistics: deliveryMethod,
+                                    totalAmount: total,
+                                    paymentReference: response.reference,
+                                    paymentMethod: "paystack",
+                                }),
+                            });
+
+                            if (res.ok) {
+                                const order = await res.json();
+                                clearCart();
+                                router.push(`/order-confirmation/${order.id}`);
+                            } else {
+                                const err = await res.json();
+                                alert(`Order creation failed: ${err.error}`);
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            alert("Order creation failed. Please contact support with reference: " + response.reference);
+                        } finally {
+                            setIsProcessing(false);
+                        }
+                    },
+                    () => {
+                        // User closed popup
+                        setIsProcessing(false);
+                        console.log("Payment popup closed");
+                    }
+                );
+            } else {
+                // Crypto/Wallet Payment
+                if (selectedWalletCurrency !== "NGN") {
+                    alert("For this beta, please pay with NGN wallet balance.");
+                    setIsProcessing(false);
+                    return;
+                }
+
+                const res = await fetch("/api/orders", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        items,
+                        address: shippingAddress,
+                        logistics: deliveryMethod,
+                        totalAmount: total,
+                        paymentMethod: "wallet",
+                        walletCurrency: selectedWalletCurrency,
+                    }),
+                });
+
+                if (res.ok) {
+                    const order = await res.json();
+                    clearCart();
+                    router.push(`/order-confirmation/${order.id}`);
+                } else {
+                    const err = await res.json();
+                    alert(`Order Failed: ${err.error}`);
+                }
+                setIsProcessing(false);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Something went wrong. Please try again.");
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+            <div className="mb-8">
+                <nav aria-label="Breadcrumb" className="flex">
+                    <ol className="inline-flex items-center space-x-1 md:space-x-3">
+                        <li className="inline-flex items-center">
+                            <Link href="/cart" className="inline-flex items-center text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary">
+                                Cart
+                            </Link>
+                        </li>
+                        <li>
+                            <div className="flex items-center">
+                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                                <span className="ml-1 text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark md:ml-2">Shipping</span>
+                            </div>
+                        </li>
+                        <li aria-current="page">
+                            <div className="flex items-center">
+                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                                <span className="ml-1 text-sm font-medium text-primary md:ml-2">Payment</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+                <h1 className="text-3xl font-display font-bold text-text-light dark:text-text-dark mt-4">Secure Checkout</h1>
+                <p className="text-secondary-text-light dark:text-secondary-text-dark mt-2">Complete your purchase of agricultural supplies securely.</p>
+            </div>
+
+            <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">
+                <section className="lg:col-span-7 space-y-8">
+                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
+                        <div className="p-6 border-b border-border-light dark:border-border-dark">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wide">Shipping To</h3>
+                                    <p className="mt-1 text-text-light dark:text-text-dark font-medium">Farm #42, Agadez Region, Niger</p>
+                                </div>
+                                <button className="text-primary hover:text-primary-dark text-sm font-medium">Edit</button>
+                            </div>
+                        </div>
+                        <div className="p-6">
+                            <h3 className="text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wide mb-4">Delivery Service</h3>
+                            <div className="space-y-3">
+                                <label className="flex items-center justify-between p-4 rounded-lg border border-primary bg-primary/5 cursor-pointer">
+                                    <div className="flex items-center gap-3">
+                                        <input type="radio" name="shipping" defaultChecked className="h-4 w-4 text-primary focus:ring-primary" />
+                                        <div>
+                                            <p className="font-bold text-text-light dark:text-text-dark">GIG Logistics</p>
+                                            <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark">Standard Delivery (3-5 Days)</p>
+                                        </div>
+                                    </div>
+                                    <span className="font-bold text-text-light dark:text-text-dark">₦2,500.00</span>
+                                </label>
+                                <label className="flex items-center justify-between p-4 rounded-lg border border-border-light dark:border-border-dark hover:border-primary cursor-pointer transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <input type="radio" name="shipping" className="h-4 w-4 text-primary focus:ring-primary" />
+                                        <div>
+                                            <p className="font-bold text-text-light dark:text-text-dark">TopShip Express</p>
+                                            <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark">Next Day Delivery</p>
+                                        </div>
+                                    </div>
+                                    <span className="font-bold text-text-light dark:text-text-dark">₦4,500.00</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark p-6">
+                        <h2 className="text-xl font-bold text-text-light dark:text-text-dark mb-6">Payment Method</h2>
+
+                        <div className="flex space-x-1 bg-background-light dark:bg-background-dark p-1 rounded-lg mb-6 border border-border-light dark:border-border-dark">
+                            <button
+                                onClick={() => setPaymentMethod("fiat")}
+                                className={cn(
+                                    "flex-1 flex items-center justify-center py-2.5 text-sm font-medium rounded-md shadow transition-colors",
+                                    paymentMethod === "fiat" ? "bg-surface-light dark:bg-surface-dark text-primary" : "text-secondary-text-light dark:text-secondary-text-dark hover:text-text-light dark:hover:text-text-dark"
+                                )}
+                            >
+                                <CreditCard className="mr-2 h-5 w-5" /> Fiat (Card/Bank)
+                            </button>
+                            <button
+                                onClick={() => setPaymentMethod("crypto")}
+                                className={cn(
+                                    "flex-1 flex items-center justify-center py-2.5 text-sm font-medium rounded-md shadow transition-colors",
+                                    paymentMethod === "crypto" ? "bg-surface-light dark:bg-surface-dark text-primary" : "text-secondary-text-light dark:text-secondary-text-dark hover:text-text-light dark:hover:text-text-dark"
+                                )}
+                            >
+                                <Wallet className="mr-2 h-5 w-5" /> Gonana Wallet
+                            </button>
+                        </div>
+
+                        {paymentMethod === "fiat" ? (
+                            <div className="space-y-4">
+                                <div className="rounded-lg border border-primary bg-primary/5 p-6">
+                                    <div className="flex items-start gap-4 mb-4">
+                                        <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                                            <CreditCard className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="text-base font-semibold text-text-light dark:text-text-dark mb-2">
+                                                Secure Card Payment via Paystack
+                                            </h4>
+                                            <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark mb-3">
+                                                Pay safely with Visa, Mastercard, Verve, or Bank Transfer. Powered by Paystack.
+                                            </p>
+                                            <div className="flex items-center gap-2 text-xs text-secondary-text-light dark:text-secondary-text-dark">
+                                                <Lock className="h-3 w-3" />
+                                                <span>256-bit SSL encrypted • PCI-DSS compliant</span>
+                                            </div>
+                                        </div>
+                                        <Sprout className="h-8 w-8 text-primary opacity-30" />
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 pt-4 border-t border-border-light dark:border-border-dark">
+                                        <span className="text-xs px-2 py-1 bg-white dark:bg-gray-800 rounded border border-border-light dark:border-border-dark">💳 Card</span>
+                                        <span className="text-xs px-2 py-1 bg-white dark:bg-gray-800 rounded border border-border-light dark:border-border-dark">🏦 Bank Transfer</span>
+                                        <span className="text-xs px-2 py-1 bg-white dark:bg-gray-800 rounded border border-border-light dark:border-border-dark">📱 USSD</span>
+                                        <span className="text-xs px-2 py-1 bg-white dark:bg-gray-800 rounded border border-border-light dark:border-border-dark">📲 Mobile Money</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                    <p className="text-sm text-blue-800 dark:text-blue-300 flex items-start gap-2">
+                                        <span className="text-lg">ℹ️</span>
+                                        <span>Click <strong>Pay Now</strong> below to open the secure Paystack payment window. No card details are stored on our servers.</span>
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-6 space-y-4">
+                                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-medium text-text-light dark:text-text-dark">Pay with Wallet Balance</h3>
+                                        <span className="px-2 py-1 text-xs font-semibold bg-primary text-white rounded-full">Custodial</span>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark">Select currency to pay with:</p>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {/* Wallets selection */}
+                                            {['NGN', 'USDT', 'USDC'].map((curr) => (
+                                                <label key={curr} className={cn(
+                                                    "relative flex cursor-pointer rounded-lg border bg-surface-light dark:bg-surface-dark p-4 shadow-sm hover:border-primary transition-all",
+                                                    selectedWalletCurrency === curr ? "border-primary ring-1 ring-primary" : "border-border-light dark:border-border-dark"
+                                                )}>
+                                                    <input
+                                                        type="radio"
+                                                        name="wallet-currency"
+                                                        value={curr}
+                                                        className="sr-only peer"
+                                                        checked={selectedWalletCurrency === curr}
+                                                        onChange={() => setSelectedWalletCurrency(curr as "NGN" | "USDT" | "USDC")}
+                                                    />
+                                                    <div className="flex flex-1 items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-xs">{curr}</div>
+                                                            <div>
+                                                                <span className="block text-sm font-medium text-text-light dark:text-text-dark">{curr} Balance</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-sm font-bold text-primary">
+                                                                {/* Display Balance */}
+                                                                {curr === 'NGN' ? `₦${balances.NGN.toLocaleString()} ` :
+                                                                    curr === 'USDT' ? `$${balances.USDT.toLocaleString()} ` :
+                                                                        `$${balances.USDC.toLocaleString()} `}
+                                                            </span>
+                                                            {/* Show conversion if paying in NGN for USD item */}
+                                                            {curr === 'NGN' && (
+                                                                <span className="text-[10px] text-gray-500">
+                                                                    Exch: ₦{exchangeRate}/$
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex justify-between items-center text-sm p-3 bg-surface-light dark:bg-surface-dark rounded border border-border-light dark:border-border-dark">
+                                        <span className="text-secondary-text-light dark:text-secondary-text-dark">Zero Transaction Fees within Gonana.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {isKycVerified && (
+                        <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                            <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            <div>
+                                <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Identity Verified</p>
+                                <p className="text-xs text-blue-600 dark:text-blue-400">Your KYC status is active. High-value transactions are enabled.</p>
+                            </div>
+                        </div>
+                    )}
+                </section>
+
+                <section className="lg:col-span-5 mt-10 lg:mt-0">
+                    <div className="sticky top-24">
+                        <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-lg border border-border-light dark:border-border-dark overflow-hidden">
+                            <div className="p-6 bg-primary/5 border-b border-border-light dark:border-border-dark">
+                                <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Order Summary</h2>
+                                <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark mt-1">Order #GN-7829-XJ</p>
+                            </div>
+                            <div className="p-6 space-y-6">
+                                <ul className="divide-y divide-border-light dark:divide-border-dark">
+                                    {items.map((item) => (
+                                        <li key={item.id} className="flex py-4 first:pt-0">
+                                            <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-border-light dark:border-border-dark bg-white">
+                                                <Image
+                                                    src={item.image}
+                                                    alt={item.name}
+                                                    className="object-cover object-center"
+                                                    fill
+                                                    sizes="80px"
+                                                />
+                                            </div>
+                                            <div className="ml-4 flex flex-1 flex-col">
+                                                <div>
+                                                    <div className="flex justify-between text-base font-medium text-text-light dark:text-text-dark">
+                                                        <h3><Link href={`/ product / ${item.id} `}>{item.name}</Link></h3>
+                                                        <p className="ml-4"><PriceTag amount={item.price * item.quantity} currency="NGN" /></p>
+                                                    </div>
+                                                    <p className="mt-1 text-sm text-secondary-text-light dark:text-secondary-text-dark">{item.unit}</p>
+                                                </div>
+                                                <div className="flex flex-1 items-end justify-between text-sm">
+                                                    <p className="text-secondary-text-light dark:text-secondary-text-dark">Qty {item.quantity}</p>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <div className="border-t border-border-light dark:border-border-dark pt-6 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <dt className="text-sm text-secondary-text-light dark:text-secondary-text-dark">Subtotal</dt>
+                                        <dd className="text-sm font-medium text-text-light dark:text-text-dark"><PriceTag amount={subtotal} currency="NGN" /></dd>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <dt className="text-sm text-secondary-text-light dark:text-secondary-text-dark">Shipping</dt>
+                                        <dd className="text-sm font-medium text-text-light dark:text-text-dark"><PriceTag amount={shippingCost} currency="NGN" /></dd>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <dt className="text-sm text-secondary-text-light dark:text-secondary-text-dark">Taxes</dt>
+                                        <dd className="text-sm font-medium text-text-light dark:text-text-dark"><PriceTag amount={tax} currency="NGN" /></dd>
+                                    </div>
+                                    <div className="flex items-center justify-between border-t border-border-light dark:border-border-dark pt-6">
+                                        <dt className="text-base font-bold text-text-light dark:text-text-dark">Total</dt>
+                                        <dd className="text-base font-bold text-primary"><PriceTag amount={total} currency="NGN" /></dd>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-6 bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark">
+                                <button
+                                    onClick={handlePay}
+                                    disabled={isProcessing}
+                                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-wait"
+                                >
+                                    {isProcessing ? (
+                                        "Processing..."
+                                    ) : (
+                                        <>
+                                            <Lock className="h-5 w-5" /> Pay <PriceTag amount={total} currency="NGN" className="ml-1" />
+                                        </>
+                                    )}
+                                </button>
+                                <p className="text-xs text-center text-secondary-text-light dark:text-secondary-text-dark mt-4">
+                                    By placing this order, you agree to Gonana&apos;s <Link href="#" className="underline hover:text-primary">Terms of Service</Link> and <Link href="#" className="underline hover:text-primary">Privacy Policy</Link>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    );
+}
