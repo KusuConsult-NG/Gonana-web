@@ -38,8 +38,30 @@ export default function SignupPage() {
         setIsLoading(true);
 
         try {
-            // Sign up by logging in with credentials
-            // The auth system will auto-create the user on first login
+            // First, create the account via signup API
+            const signupResponse = await fetch('/api/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    password: formData.password,
+                    role: formData.role,
+                }),
+            });
+
+            const signupData = await signupResponse.json();
+
+            if (!signupResponse.ok) {
+                alert(signupData.error || 'Signup failed. Please try again.');
+                setIsLoading(false);
+                return;
+            }
+
+            // Then, automatically sign in the user
             const result = await signIn("credentials", {
                 email: formData.email,
                 password: formData.password,
@@ -49,7 +71,8 @@ export default function SignupPage() {
             if (result?.ok) {
                 router.push("/"); // Redirect to marketplace home
             } else {
-                alert("Signup failed. Please try again.");
+                alert("Account created but login failed. Please try logging in manually.");
+                router.push("/login");
             }
         } catch (error) {
             console.error("Signup error:", error);
@@ -280,25 +303,30 @@ export default function SignupPage() {
                         </Button>
                     </form>
 
-                    {/* Social Signup */}
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-border-light dark:border-border-dark"></div>
+                    {/* Show Google sign-up only if configured */}
+                    {process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === 'true' && (
+                        <div className="mt-6">
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-border-light dark:border-border-dark"></div>
+                                </div>
+                                <div className="relative flex justify-center text-sm">
+                                    <span className="px-2 bg-surface-light dark:bg-surface-dark text-secondary-text-light dark:text-secondary-text-dark">
+                                        Or sign up with
+                                    </span>
+                                </div>
                             </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-surface-light dark:bg-surface-dark text-secondary-text-light dark:text-secondary-text-dark">
-                                    Or sign up with
-                                </span>
-                            </div>
-                        </div>
 
-                        <button className="w-full inline-flex justify-center py-2.5 px-4 border border-border-light dark:border-border-dark rounded-lg shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"></path>
-                            </svg>
-                        </button>
-                    </div>
+                            <button
+                                onClick={() => signIn('google', { callbackUrl: '/' })}
+                                className="w-full inline-flex justify-center py-2.5 px-4 border border-border-light dark:border-border-dark rounded-lg shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    )}
 
                     <p className="mt-6 text-center text-sm text-secondary-text-light dark:text-secondary-text-dark">
                         Already have an account?{" "}

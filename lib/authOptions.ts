@@ -1,11 +1,27 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(prisma),
     providers: [
+        // Only add Google provider if credentials are configured
+        ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+            ? [GoogleProvider({
+                clientId: process.env.GOOGLE_CLIENT_ID!,
+                clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+                authorization: {
+                    params: {
+                        prompt: "consent",
+                        access_type: "offline",
+                        response_type: "code"
+                    }
+                }
+            })]
+            : []
+        ),
         CredentialsProvider({
             name: "Credentials",
             credentials: {
@@ -46,10 +62,33 @@ export const authOptions: NextAuthOptions = {
         strategy: "jwt",
     },
     callbacks: {
-        async session({ session, token }) {
+        async signIn({ user, account, profile }) {
+            // When a user signs in with Google for the first time
+            if (account?.provider === "google" && user.email) {
+                // Check if user has a wallet, if not create one
+                const existingUser = await prisma.user.findUnique({
+                    where: { email: user.email },
+                    include: { wallet: true }
+                });
+
+                if (existingUser && !existingUser.wallet) {
+                    await prisma.wallet.create({
+                        data: {
+                            userId: existingUser.id,
+                            balanceNGN: 0,
+                            balanceUSD: 0,
+                            balanceUSDT: 0,
+                            balanceUSDC: 0,
+                        }
+                    });
+                }
+            }
+            return true;
+        },
+        async session({ session, token, user }) {
             if (session.user) {
                 session.user.id = token.sub!;
-                // session.user.role = token.role; // Add role if needed
+                // Add custom fields if needed
             }
             return session;
         },
