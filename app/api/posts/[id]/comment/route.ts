@@ -29,3 +29,39 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json({ error: "Failed to comment" }, { status: 500 });
     }
 }
+
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+
+    try {
+        const commentsSnapshot = await adminDb.collection('posts').doc(id).collection('comments')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        const comments = await Promise.all(commentsSnapshot.docs.map(async (doc) => {
+            const data = doc.data();
+            let authorName = "Unknown User";
+            let authorImage = null;
+
+            if (data.authorId) {
+                const userDoc = await adminDb.collection('users').doc(data.authorId).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    authorName = userData?.name || "Unknown User";
+                    authorImage = userData?.image || null;
+                }
+            }
+
+            return {
+                id: doc.id,
+                ...data,
+                authorName,
+                authorImage
+            };
+        }));
+
+        return NextResponse.json(comments);
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to fetch comments" }, { status: 500 });
+    }
+}
