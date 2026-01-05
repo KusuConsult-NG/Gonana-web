@@ -26,6 +26,7 @@ export default function WalletPage() {
     const reportRef = useRef<HTMLDivElement>(null);
     const [transactions, setTransactions] = useState<any[]>([]);
     const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
+    const [virtualAccount, setVirtualAccount] = useState<any>(null);
 
     // Fetch real transactions
     useEffect(() => {
@@ -43,7 +44,20 @@ export default function WalletPage() {
             }
         };
 
+        const fetchVirtualAccount = async () => {
+            try {
+                const res = await fetch('/api/user/profile');
+                if (res.ok) {
+                    const data = await res.json();
+                    setVirtualAccount(data.virtualAccount);
+                }
+            } catch (error) {
+                console.error('Failed to fetch virtual account:', error);
+            }
+        };
+
         fetchTransactions();
+        fetchVirtualAccount();
     }, []);
 
     const generatePDF = async () => {
@@ -182,7 +196,7 @@ export default function WalletPage() {
                                         <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wider mb-1">Account Number</p>
                                         <div className="flex items-center justify-between">
                                             <p className="font-mono font-bold text-xl text-primary tracking-widest">
-                                                99{Math.floor(Math.random() * 100000000)} {/* Mock for now since we don't have separate fetch logic yet in this component */}
+                                                {virtualAccount?.accountNumber || '••••••••••'}
                                             </p>
                                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full">
                                                 <span className="text-xs">📋</span>

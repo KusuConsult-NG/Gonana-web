@@ -75,8 +75,8 @@ export default function CheckoutPage() {
                                 quantity: item.quantity,
                                 price: item.price
                             })),
-                            shipping_address: shippingAddress,
-                            delivery_method: deliveryMethod,
+                            shipping_address: `${shippingData.address}, ${shippingData.city}, ${shippingData.state}${shippingData.postalCode ? ', ' + shippingData.postalCode : ''}`,
+                            delivery_method: "logistics",
                         },
                     },
                     async (response) => {
@@ -89,8 +89,8 @@ export default function CheckoutPage() {
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
                                     items,
-                                    address: shippingAddress,
-                                    logistics: deliveryMethod,
+                                    address: `${shippingData.address}, ${shippingData.city}, ${shippingData.state}${shippingData.postalCode ? ', ' + shippingData.postalCode : ''}`,
+                                    logistics: "logistics",
                                     totalAmount: total,
                                     paymentReference: response.reference,
                                     paymentMethod: "paystack",
@@ -124,8 +124,8 @@ export default function CheckoutPage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         items,
-                        address: shippingAddress,
-                        logistics: deliveryMethod,
+                        address: `${shippingData.address}, ${shippingData.city}, ${shippingData.state}${shippingData.postalCode ? ', ' + shippingData.postalCode : ''}`,
+                        logistics: "logistics",
                         totalAmount: total,
                         paymentMethod: "wallet",
                         walletCurrency: selectedWalletCurrency,
@@ -185,9 +185,15 @@ export default function CheckoutPage() {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h3 className="text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wide">Shipping To</h3>
-                                    <p className="mt-1 text-text-light dark:text-text-dark font-medium">Farm #42, Agadez Region, Niger</p>
+                                    <p className="mt-1 text-text-light dark:text-text-dark font-medium">
+                                        {shippingData.fullName || 'Please fill shipping form below'}
+                                    </p>
+                                    {shippingData.address && (
+                                        <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark mt-1">
+                                            {shippingData.address}, {shippingData.city}, {shippingData.state}
+                                        </p>
+                                    )}
                                 </div>
-                                <button className="text-primary hover:text-primary-dark text-sm font-medium">Edit</button>
                             </div>
                         </div>
                         <div className="p-6">

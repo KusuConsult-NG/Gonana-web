@@ -105,18 +105,53 @@ export async function POST(req: Request) {
             // Don't fail the whole request, but log it. User can retry wallet gen later.
         }
 
-        // 6. Generate Fiat Wallet (Mock/Placeholder for Paystack Virtual Account)
-        // Ideally, we call Paystack API to create a Dedicated NUBAN here.
-        const fiatWallet = {
-            bankName: "Gonana Virtual Bank",
-            accountNumber: "99" + Math.floor(Math.random() * 100000000), // Mock
-            accountName: "Gonana User " + userId.substring(0, 4)
-        };
+        // 6. Generate Real Fiat Wallet via Paystack Virtual Account
+        let fiatWallet = null;
+        try {
+            // Get user data for account creation
+            const userDoc = await adminDb.collection('users').doc(userId).get();
+            const userData = userDoc.data();
+
+            // Create Paystack virtual account
+            const virtualAccountResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/paystack/create-virtual-account`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: userData?.email || session.user.email,
+                    firstName: userData?.firstName || firstName || 'User',
+                    lastName: userData?.lastName || lastName || '',
+                    phone: userData?.phone || ''
+                })
+            });
+
+            if (virtualAccountResponse.ok) {
+                const virtualAccountData = await virtualAccountResponse.json();
+                fiatWallet = virtualAccountData.account;
+            } else {
+                console.error('Failed to create Paystack virtual account');
+                // Fallback to mock if Paystack fails
+                fiatWallet = {
+                    bankName: "Gonana Virtual Bank (Pending)",
+                    accountNumber: "99" + Math.floor(Math.random() * 100000000),
+                    accountName: "Gonana User " + userId.substring(0, 4)
+                };
+            }
+        } catch (error) {
+            console.error('Error creating virtual account:', error);
+            // Fallback to mock
+            fiatWallet = {
+                bankName: "Gonana Virtual Bank (Pending)",
+                accountNumber: "99" + Math.floor(Math.random() * 100000000),
+                accountName: "Gonana User " + userId.substring(0, 4)
+            };
+        }
 
         await adminDb.collection('fiatWallets').doc(userId).set({
             userId,
             ...fiatWallet,
-            provider: "paystack", // or prembly
+            provider: fiatWallet.bankCode ? "paystack" : "mock",
             createdAt: new Date().toISOString()
         });
 
