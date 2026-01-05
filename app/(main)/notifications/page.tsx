@@ -225,7 +225,7 @@ export default function NotificationsPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {groupNotifications.map((notification) => {
+                                    {(groupNotifications as any[]).map((notification: any) => {
                                         const Icon = notification.icon;
                                         return (
                                             <div
