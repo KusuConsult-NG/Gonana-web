@@ -12,15 +12,19 @@ export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [filter, setFilter] = useState<"all" | "order" | "message" | "wallet" | "system">("all");
     const [isLoading, setIsLoading] = useState(true);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [limit] = useState(20);
 
     // Fetch real notifications
     useEffect(() => {
         const fetchNotifications = async () => {
             try {
-                const res = await fetch('/api/notifications');
+                const res = await fetch(`/api/notifications?limit=${limit}`);
                 if (res.ok) {
                     const data = await res.json();
                     setNotifications(data);
+                    setHasMore(data.length >= limit);
                 }
             } catch (error) {
                 console.error('Failed to fetch notifications:', error);
@@ -30,7 +34,26 @@ export default function NotificationsPage() {
         };
 
         fetchNotifications();
-    }, []);
+    }, [limit]);
+
+    const loadMoreNotifications = async () => {
+        if (isLoadingMore || !hasMore) return;
+
+        setIsLoadingMore(true);
+        try {
+            const lastNotification = notifications[notifications.length - 1];
+            const res = await fetch(`/api/notifications?limit=${limit}&after=${lastNotification.createdAt}`);
+            if (res.ok) {
+                const data = await res.json();
+                setNotifications([...notifications, ...data]);
+                setHasMore(data.length >= limit);
+            }
+        } catch (error) {
+            console.error('Failed to load more notifications:', error);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
 
     const unreadCount = notifications.filter((n) => !n.read).length;
     const orderCount = notifications.filter((n) => n.type === "order" && !n.read).length;
@@ -273,14 +296,20 @@ export default function NotificationsPage() {
                     </div>
 
                     {/* Load More */}
-                    <div className="flex justify-center mt-8 pt-4">
-                        <button className="text-sm text-text-muted-light dark:text-text-muted-dark hover:text-primary dark:hover:text-primary transition-colors flex items-center gap-1">
-                            Load older notifications
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                    </div>
+                    {hasMore && (
+                        <div className="flex justify-center mt-8 pt-4">
+                            <button
+                                onClick={loadMoreNotifications}
+                                disabled={isLoadingMore}
+                                className="text-sm text-text-muted-light dark:text-text-muted-dark hover:text-primary dark:hover:text-primary transition-colors flex items-center gap-1"
+                            >
+                                {isLoadingMore ? 'Loading...' : 'Load older notifications'}
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

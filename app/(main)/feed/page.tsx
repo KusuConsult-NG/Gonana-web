@@ -33,10 +33,16 @@ export default function CommunityPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [commentingOnPost, setCommentingOnPost] = useState<string | null>(null);
     const [commentContent, setCommentContent] = useState("");
+    const [trendingTopics, setTrendingTopics] = useState<{ tag: string, count: number }[]>([]);
+    const [userBio, setUserBio] = useState("");
 
     useEffect(() => {
         fetchPosts();
-    }, []);
+        fetchTrendingTopics();
+        if (session?.user?.id) {
+            fetchUserBio();
+        }
+    }, [session]);
 
     const fetchPosts = async () => {
         try {
@@ -49,6 +55,31 @@ export default function CommunityPage() {
             console.error("Failed to fetch posts:", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchTrendingTopics = async () => {
+        try {
+            const res = await fetch("/api/trending");
+            if (res.ok) {
+                const data = await res.json();
+                setTrendingTopics(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch trending:", error);
+        }
+    };
+
+    const fetchUserBio = async () => {
+        try {
+            const res = await fetch(`/api/users/${session?.user?.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setUserBio(data.bio || "Passionate about sustainable agriculture. 🌾");
+            }
+        } catch (error) {
+            console.error("Failed to fetch user bio:", error);
+            setUserBio("Passionate about sustainable agriculture. 🌾");
         }
     };
 
@@ -175,7 +206,7 @@ export default function CommunityPage() {
                                 <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark">@{session?.user?.email?.split('@')[0] || "guest"}</p>
 
                                 {session ? (
-                                    <p className="mt-3 text-sm text-text-light dark:text-text-dark">Passionate about sustainable agriculture. 🌾</p>
+                                    <p className="mt-3 text-sm text-text-light dark:text-text-dark">{userBio}</p>
                                 ) : (
                                     <p className="mt-3 text-sm text-text-light dark:text-text-dark italic">Login to view full profile</p>
                                 )}
@@ -326,13 +357,18 @@ export default function CommunityPage() {
                         <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark p-4">
                             <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-4">Trending Topics</h3>
                             <ul className="space-y-4">
-                                {["#SustainableFarming", "#AgriTechSummitt", "#OrganicMaize", "#GonanaMarket", "#ClimateSmart"].map((tag, i) => (
-                                    <li key={i}>
-                                        <Link href="#" className="block group">
-                                            <span className="text-sm font-medium text-text-light dark:text-text-dark group-hover:text-primary transition-colors">{tag}</span>
-                                        </Link>
-                                    </li>
-                                ))}
+                                {trendingTopics.length > 0 ? (
+                                    trendingTopics.slice(0, 5).map((topic, i) => (
+                                        <li key={i}>
+                                            <Link href={`/feed?tag=${encodeURIComponent(topic.tag)}`} className="block group">
+                                                <span className="text-sm font-medium text-text-light dark:text-text-dark group-hover:text-primary transition-colors">{topic.tag}</span>
+                                                <span className="text-xs text-gray-500 ml-2">({topic.count} posts)</span>
+                                            </Link>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-gray-500">No trending topics yet</p>
+                                )}
                             </ul>
                         </div>
                     </div>

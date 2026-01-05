@@ -10,13 +10,8 @@ export default function Error({
     reset: () => void;
 }) {
     useEffect(() => {
-        // Log error to error monitoring service (e.g., Sentry)
-        if (process.env.NODE_ENV === "production") {
-            // TODO: Send to error monitoring service
-            // Example: Sentry.captureException(error);
-        } else {
-            console.error("Application error:", error);
-        }
+        // Log error to Sentry (already configured in instrumentation.ts)
+        console.error('Error boundary caught:', error);
     }, [error]);
 
     return (
