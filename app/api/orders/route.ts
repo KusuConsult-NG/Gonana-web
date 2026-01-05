@@ -4,7 +4,7 @@ import { adminDb } from "@/lib/firebase-admin";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { userId, items, paymentMethod, shippingMethod } = body;
+        const { userId, items, paymentMethod, shippingMethod, walletCurrency, network } = body;
 
         if (!userId) {
             return NextResponse.json({ error: "User ID required" }, { status: 400 });
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
         }
 
-        let totalAmount = 0;
+        let totalAmountNGN = 0;
         const orderItems: any[] = [];
 
         // Calculate total and verify products
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
                 }, { status: 400 });
             }
 
-            totalAmount += product.price * item.quantity;
+            totalAmountNGN += product.price * item.quantity;
             orderItems.push({
                 productId: item.id.toString(),
                 productName: product.name,
@@ -45,7 +45,47 @@ export async function POST(req: Request) {
 
         // Add shipping cost
         const shippingCost = shippingMethod === "logistics" ? 2500 : 0;
-        totalAmount += shippingCost;
+        totalAmountNGN += shippingCost;
+
+        // Mock Exchange Rates (In production, fetch from CoinGecko or cache)
+        const EXCHANGE_RATES = {
+            NGN_USD: 1 / 1500, // 1 NGN = 0.00066 USD
+            ETH_USD: 3500,     // 1 ETH = 3500 USD
+            BNB_USD: 600,      // 1 BNB = 600 USD
+            MATIC_USD: 0.75    // 1 MATIC = 0.75 USD
+        };
+
+        // Determine payment details
+        let amountToDeduct = totalAmountNGN;
+        let currencyToDeduct = "NGN";
+        let walletField = "balanceNGN";
+
+        if (paymentMethod === "wallet" && walletCurrency && walletCurrency !== "NGN") {
+            const totalInUSD = totalAmountNGN * EXCHANGE_RATES.NGN_USD;
+            currencyToDeduct = walletCurrency;
+
+            switch (walletCurrency) {
+                case "USDT":
+                case "USDC":
+                    amountToDeduct = totalInUSD;
+                    walletField = walletCurrency === "USDT" ? "balanceUSDT" : "balanceUSDC";
+                    break;
+                case "ETH":
+                    amountToDeduct = totalInUSD / EXCHANGE_RATES.ETH_USD;
+                    walletField = "balanceETH";
+                    break;
+                case "BNB":
+                    amountToDeduct = totalInUSD / EXCHANGE_RATES.BNB_USD;
+                    walletField = "balanceBNB";
+                    break;
+                case "MATIC":
+                    amountToDeduct = totalInUSD / EXCHANGE_RATES.MATIC_USD;
+                    walletField = "balanceMATIC";
+                    break;
+                default:
+                    return NextResponse.json({ error: "Unsupported wallet currency" }, { status: 400 });
+            }
+        }
 
         // Get wallet
         const walletRef = adminDb.collection('wallets').doc(userId);
@@ -56,11 +96,12 @@ export async function POST(req: Request) {
         }
 
         const wallet = walletDoc.data()!;
+        const currentBalance = wallet[walletField] || 0;
 
-        // Check balance (assuming NGN for now)
-        if (wallet.balanceNGN < totalAmount) {
+        // Check balance
+        if (currentBalance < amountToDeduct) {
             return NextResponse.json({
-                error: "Insufficient wallet balance"
+                error: `Insufficient ${currencyToDeduct} balance. Required: ${amountToDeduct.toFixed(6)}, Available: ${currentBalance.toFixed(6)}`
             }, { status: 400 });
         }
 
@@ -68,13 +109,16 @@ export async function POST(req: Request) {
         const orderData = {
             buyerId: userId,
             items: orderItems,
-            totalAmount,
+            totalAmount: totalAmountNGN, // Always store base value in NGN
             shippingCost,
             currency: "NGN",
+            paymentCurrency: currencyToDeduct,
+            paymentAmount: amountToDeduct,
             status: "PAID",
             paymentMethod: paymentMethod || "wallet",
             paymentReference: `ORD-${Date.now()}`,
             shippingMethod: shippingMethod || "logistics",
+            network: network || "n/a",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -82,20 +126,23 @@ export async function POST(req: Request) {
         const orderRef = await adminDb.collection('orders').add(orderData);
 
         // Deduct from wallet
-        await walletRef.update({
-            balanceNGN: wallet.balanceNGN - totalAmount,
+        const updateData: any = {
             updatedAt: new Date().toISOString()
-        });
+        };
+        updateData[walletField] = currentBalance - amountToDeduct;
+
+        await walletRef.update(updateData);
 
         // Log transaction
         await adminDb.collection('transactions').add({
             walletId: userId,
             type: "PAYMENT",
-            amount: totalAmount,
-            currency: "NGN",
+            amount: amountToDeduct,
+            currency: currencyToDeduct,
             status: "COMPLETED",
             reference: orderData.paymentReference,
             description: `Order payment for ${orderItems.length} item(s)`,
+            orderId: orderRef.id,
             createdAt: new Date().toISOString()
         });
 

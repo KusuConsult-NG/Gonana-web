@@ -1,28 +1,22 @@
 import { NextResponse } from "next/server";
-import { adminDb, verifyIdToken } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions";
 
 export async function POST(req: Request) {
     try {
-        // Verify Firebase authentication
-        const authHeader = req.headers.get("Authorization");
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
-        }
+        const session = await getServerSession(authOptions);
 
-        const token = authHeader.split("Bearer ")[1];
-        let decodedToken;
-        try {
-            decodedToken = await verifyIdToken(token);
-        } catch (error) {
-            return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized - No session" }, { status: 401 });
         }
 
         const body = await req.json();
         const { name, description, price, quantity, unit, location, category, deliveryMode, images } = body;
 
         // Use authenticated user ID
-        const sellerId = decodedToken.uid;
-        const sellerName = decodedToken.name || decodedToken.email || "Unknown Seller";
+        const sellerId = session.user.id;
+        const sellerName = session.user.name || session.user.email || "Unknown Seller";
 
         const productData = {
             sellerId,

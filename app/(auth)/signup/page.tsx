@@ -20,6 +20,8 @@ export default function SignupPage() {
         email: "",
         password: "",
         confirmPassword: "",
+        age: "",
+        gender: "Prefer not to say",
         role: "buyer" as "buyer" | "seller" | "both",
         agreeToTerms: false,
     });
@@ -50,6 +52,8 @@ export default function SignupPage() {
                     email: formData.email,
                     password: formData.password,
                     role: formData.role,
+                    age: formData.age,
+                    gender: formData.gender,
                 }),
             });
 
@@ -189,6 +193,33 @@ export default function SignupPage() {
                                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                 required
                             />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                type="number"
+                                label="Age"
+                                placeholder="30"
+                                value={formData.age}
+                                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                                required
+                                min={18}
+                            />
+                            <div>
+                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">
+                                    Gender
+                                </label>
+                                <select
+                                    className="block w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-gray-800 text-text-light dark:text-text-dark shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm py-2.5 px-3 outline-none"
+                                    value={formData.gender}
+                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                >
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                    <option value="Prefer not to say">Prefer not to say</option>
+                                </select>
+                            </div>
                         </div>
 
                         <Input

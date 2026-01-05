@@ -83,7 +83,7 @@ export function Navbar() {
                                 </div>
                             </Link>
                         ) : (
-                            <Link href="/login" className="hidden sm:flex text-sm font-medium text-primary border border-primary px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors">
+                            <Link href={user ? "/kyc" : "/login"} className="hidden sm:flex text-sm font-medium text-primary border border-primary px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors">
                                 Verify Identity (KYC)
                             </Link>
                         )}

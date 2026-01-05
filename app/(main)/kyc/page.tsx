@@ -7,11 +7,25 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 type DocumentType = "passport" | "national_id" | "drivers_license" | "";
 
 export default function KYCPage() {
+    const { user, loading } = useAuth();
+    const router = useRouter();
     const [step, setStep] = useState(1);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login?callbackUrl=/kyc');
+        }
+    }, [user, loading, router]);
+
+    if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    if (!user) return null;
     const [documentType, setDocumentType] = useState<DocumentType>("");
     const [documentNumber, setDocumentNumber] = useState("");
     const [expiryDate, setExpiryDate] = useState("");
@@ -44,10 +58,40 @@ export default function KYCPage() {
         maxSize: 5 * 1024 * 1024,
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Submit KYC documents
-        alert("KYC documents submitted for review!");
+
+        try {
+            // In a real implementation we would upload the images here using Firebase Storage
+            // const imageUrl = await uploadImage(frontImage);
+
+            const response = await fetch('/api/kyc/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await user?.getIdToken()}`
+                },
+                body: JSON.stringify({
+                    documentType,
+                    documentNumber,
+                    image: "mock_image_url" // Placeholder
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.error || "Verification failed");
+                return;
+            }
+
+            alert("Identity Verified Successfully! Your wallet has been generated.");
+            router.push('/wallet');
+
+        } catch (error) {
+            console.error("KYC Submission Error:", error);
+            alert("Failed to submit verification. Please try again.");
+        }
     };
 
     const progressPercentage = (step / 3) * 100;
@@ -200,10 +244,10 @@ export default function KYCPage() {
                                     <div
                                         {...frontDropzone.getRootProps()}
                                         className={`group relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg hover:border-primary transition-all cursor-pointer flex-1 min-h-[160px] ${frontImage
-                                                ? "border-primary bg-primary/5"
-                                                : frontDropzone.isDragActive
-                                                    ? "border-primary bg-primary/10"
-                                                    : "border-border-light dark:border-border-dark hover:bg-background-light dark:hover:bg-surface-dark"
+                                            ? "border-primary bg-primary/5"
+                                            : frontDropzone.isDragActive
+                                                ? "border-primary bg-primary/10"
+                                                : "border-border-light dark:border-border-dark hover:bg-background-light dark:hover:bg-surface-dark"
                                             }`}
                                     >
                                         <input {...frontDropzone.getInputProps()} />
@@ -228,10 +272,10 @@ export default function KYCPage() {
                                     <div
                                         {...backDropzone.getRootProps()}
                                         className={`group relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg hover:border-primary transition-all cursor-pointer flex-1 min-h-[160px] ${backImage
-                                                ? "border-primary bg-primary/5"
-                                                : backDropzone.isDragActive
-                                                    ? "border-primary bg-primary/10"
-                                                    : "border-border-light dark:border-border-dark hover:bg-background-light dark:hover:bg-surface-dark"
+                                            ? "border-primary bg-primary/5"
+                                            : backDropzone.isDragActive
+                                                ? "border-primary bg-primary/10"
+                                                : "border-border-light dark:border-border-dark hover:bg-background-light dark:hover:bg-surface-dark"
                                             }`}
                                     >
                                         <input {...backDropzone.getInputProps()} />

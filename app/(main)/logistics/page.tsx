@@ -52,7 +52,7 @@ export default function LogisticsPage() {
                     <p className="mt-2 text-sm text-gray-400">We&apos;ve partnered with Nigeria&apos;s leading logistics providers to ensure your produce reaches its destination fresh and on time. Compare rates, book pickups, and track deliveries directly from your dashboard.
                     </p>
                     <div className="flex gap-4 justify-center mt-8">
-                        <Link href="/" className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
+                        <Link href="/book-shipment" className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
                             Book a Shipment <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>

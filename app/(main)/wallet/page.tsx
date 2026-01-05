@@ -153,6 +153,37 @@ export default function WalletPage() {
                             </div>
                         </div>
 
+                        {/* Virtual Account Card */}
+                        {isKycVerified && (
+                            <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden p-6 md:col-span-1">
+                                <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-4 flex items-center gap-2">
+                                    <Banknote className="h-5 w-5 text-primary" />
+                                    Virtual Bank Account
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                        <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wider mb-1">Bank Name</p>
+                                        <p className="font-bold text-text-light dark:text-text-dark">Gonana Virtual Bank</p>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                        <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wider mb-1">Account Number</p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-mono font-bold text-xl text-primary tracking-widest">
+                                                99{Math.floor(Math.random() * 100000000)} {/* Mock for now since we don't have separate fetch logic yet in this component */}
+                                            </p>
+                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full">
+                                                <span className="text-xs">📋</span>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-center text-secondary-text-light dark:text-secondary-text-dark">
+                                        Send NGN to this account to top up your wallet instantly.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+
                         {/* Assets List */}
                         <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
                             <div className="px-6 py-4 border-b border-border-light dark:border-border-dark font-bold text-text-light dark:text-text-dark">
@@ -316,5 +347,6 @@ export default function WalletPage() {
                 )}
             </div>
         </div>
+
     );
 }

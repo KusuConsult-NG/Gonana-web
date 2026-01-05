@@ -4,7 +4,7 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { firstName, lastName, email, password, role } = body;
+        const { firstName, lastName, email, password, role, age, gender } = body;
 
         // Validate required fields
         if (!email || !password || !firstName || !lastName) {
@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
             firstName,
             lastName,
             role: dbRole,
+            age: age ? parseInt(age) : null,
+            gender: gender || null,
             isKycVerified: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

@@ -486,7 +486,7 @@ export default function CheckoutPage() {
                                         "Processing..."
                                     ) : (
                                         <>
-                                            <Lock className="h-5 w-5" /> Pay <PriceTag amount={total} currency="NGN" className="ml-1" />
+                                            <Lock className="h-5 w-5" /> Proceed to Payment
                                         </>
                                     )}
                                 </button>

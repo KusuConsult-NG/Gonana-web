@@ -9,6 +9,7 @@ import { PriceTag } from "@/components/ui/PriceTag";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { PRODUCT_CATEGORIES } from "@/lib/categories";
 
 export default function SellPage() {
     const router = useRouter();
@@ -21,6 +22,7 @@ export default function SellPage() {
         price: "",
         quantity: "",
         unit: "kg",
+        category: PRODUCT_CATEGORIES[0].id,
         location: "",
         selfShipment: false,
         agreeToTerms: false
@@ -86,7 +88,7 @@ export default function SellPage() {
                 quantity: formData.quantity,
                 unit: formData.unit,
                 location: formData.location,
-                category: "General", // Default for now
+                category: formData.category,
                 deliveryMode: formData.selfShipment ? "self" : "logistics",
                 images: imageUrls
             };
@@ -206,6 +208,23 @@ export default function SellPage() {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     required
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                    Category
+                                </label>
+                                <select
+                                    className="w-full rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark px-4 py-2 text-text-light dark:text-text-dark focus:border-primary focus:ring-primary sm:text-sm"
+                                    value={formData.category}
+                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                >
+                                    {PRODUCT_CATEGORIES.map((cat) => (
+                                        <option key={cat.id} value={cat.id}>
+                                            {cat.label}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 

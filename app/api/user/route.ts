@@ -1,35 +1,60 @@
 import { NextResponse } from "next/server";
-import { adminDb, verifyIdToken } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions";
+
+export async function GET(req: Request) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const userId = session.user.id;
+
+        const userDoc = await adminDb.collection('users').doc(userId).get();
+        if (!userDoc.exists) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            id: userDoc.id,
+            ...userDoc.data()
+        });
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
+    }
+}
 
 export async function PUT(req: Request) {
     try {
-        // Verify Firebase authentication
-        const authHeader = req.headers.get("Authorization");
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
+        const session = await getServerSession(authOptions);
+
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const token = authHeader.split("Bearer ")[1];
-        let decodedToken;
-        try {
-            decodedToken = await verifyIdToken(token);
-        } catch (error) {
-            return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
-        }
+        const userId = session.user.id;
 
         const body = await req.json();
-        const { name } = body;
+        const { firstName, lastName, bio, location, age, gender } = body;
 
-        // Use authenticated user ID
-        const userId = decodedToken.uid;
-
-        // Update user document in Firestore
-        await adminDb.collection('users').doc(userId).update({
-            name,
+        // Construct update object with only defined fields
+        const updateData: any = {
             updatedAt: new Date().toISOString(),
-        });
+        };
 
-        // Get updated user
+        if (firstName) updateData.firstName = firstName;
+        if (lastName) updateData.lastName = lastName;
+        if (firstName && lastName) updateData.name = `${firstName} ${lastName}`;
+        if (bio !== undefined) updateData.bio = bio;
+        if (location !== undefined) updateData.location = location;
+        if (age) updateData.age = parseInt(age);
+        if (gender) updateData.gender = gender;
+
+        await adminDb.collection('users').doc(userId).update(updateData);
+
         const userDoc = await adminDb.collection('users').doc(userId).get();
 
         return NextResponse.json({
@@ -37,6 +62,7 @@ export async function PUT(req: Request) {
             ...userDoc.data()
         });
     } catch (error) {
+        console.error("Profile update error:", error);
         return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
     }
 }
