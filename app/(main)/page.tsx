@@ -16,12 +16,8 @@ export default function MarketplacePage() {
                 const res = await fetch("/api/products");
                 if (res.ok) {
                     const data = await res.json();
-                    // Parse images for each product
-                    const parsedData = data.map((p: any) => ({
-                        ...p,
-                        image: p.images ? JSON.parse(p.images) : [],
-                    }));
-                    setProducts(parsedData);
+                    // Firestore returns images as array already, no need to parse
+                    setProducts(data);
                 }
             } catch (error) {
                 console.error("Failed to fetch products", error);
@@ -31,6 +27,7 @@ export default function MarketplacePage() {
         }
         fetchProducts();
     }, []);
+
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
