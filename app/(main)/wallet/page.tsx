@@ -11,8 +11,9 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { useRouter } from "next/navigation";
 import WithdrawForm from "@/components/wallet/WithdrawForm";
+import DepositForm from "@/components/wallet/DepositForm";
 
 type Tab = "overview" | "deposit" | "withdraw" | "earn" | "transactions";
 type Currency = "NGN" | "USD" | "USDT" | "USDC";
@@ -334,14 +335,7 @@ export default function WalletPage() {
                         {activeTab === "withdraw" ? (
                             <WithdrawForm onSuccess={() => setActiveTab("overview")} />
                         ) : (
-                            <div className="text-center">
-                                <p className="text-secondary-text-light dark:text-secondary-text-dark mb-8">
-                                    Deposit feature is coming soon.
-                                </p>
-                                <Button variant="outline" onClick={() => setActiveTab("overview")}>
-                                    Back to Wallet
-                                </Button>
-                            </div>
+                            <DepositForm onSuccess={() => setActiveTab("overview")} />
                         )}
                     </div>
                 )}
