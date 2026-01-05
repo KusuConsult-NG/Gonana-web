@@ -29,6 +29,10 @@ export default function CommunityPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [newPostContent, setNewPostContent] = useState("");
     const [isPosting, setIsPosting] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [commentingOnPost, setCommentingOnPost] = useState<string | null>(null);
+    const [commentContent, setCommentContent] = useState("");
 
     useEffect(() => {
         fetchPosts();
@@ -48,6 +52,18 @@ export default function CommunityPage() {
         }
     };
 
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setSelectedImage(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleCreatePost = async () => {
         if (!session) {
             toast.error("Please login to post");
@@ -57,18 +73,38 @@ export default function CommunityPage() {
 
         setIsPosting(true);
         try {
+            let imageUrl = null;
+
+            // Upload image if selected
+            if (selectedImage) {
+                const formData = new FormData();
+                formData.append('file', selectedImage);
+
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    imageUrl = uploadData.url;
+                }
+            }
+
             const res = await fetch("/api/posts", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     content: newPostContent,
-                    // Image upload would go here. For now sending null or we could add a random image URL for demo
+                    image: imageUrl
                 })
             });
 
             if (res.ok) {
                 setNewPostContent("");
-                fetchPosts(); // Refresh feed
+                setSelectedImage(null);
+                setImagePreview(null);
+                fetchPosts();
                 toast.success("Post created!");
             } else {
                 toast.error("Failed to create post");
@@ -183,10 +219,19 @@ export default function CommunityPage() {
                                     ></textarea>
                                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-border-light dark:border-border-dark">
                                         <div className="flex gap-2">
-                                            <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-primary transition-colors">
+                                            <label className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-primary transition-colors cursor-pointer">
                                                 <ImageIcon className="h-5 w-5" />
-                                            </button>
+                                                <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+                                            </label>
+                                            {imagePreview && (
+                                                <button onClick={() => { setSelectedImage(null); setImagePreview(null); }} className="text-xs text-red-500">Remove image</button>
+                                            )}
                                         </div>
+                                        {imagePreview && (
+                                            <div className="mt-2 relative w-32 h-32 border rounded">
+                                                <Image src={imagePreview} alt="Preview" fill className="object-cover rounded" />
+                                            </div>
+                                        )}
                                         <button
                                             onClick={handleCreatePost}
                                             disabled={!newPostContent.trim() || isPosting}
@@ -260,11 +305,11 @@ export default function CommunityPage() {
                                             <Heart className={cn("h-5 w-5", post.isLiked && "fill-current")} />
                                             <span className="text-sm font-medium">{post.likes}</span>
                                         </button>
-                                        <button className="flex items-center gap-2 text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">
+                                        <button onClick={() => setCommentingOnPost(post.id)} className="flex items-center gap-2 text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">
                                             <MessageCircle className="h-5 w-5" />
                                             <span className="text-sm font-medium">{post.comments}</span>
                                         </button>
-                                        <button className="flex items-center gap-2 text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">
+                                        <button onClick={() => { navigator.clipboard.writeText(window.location.origin + '/post/' + post.id); toast.success('Link copied!'); }} className="flex items-center gap-2 text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">
                                             <Share2 className="h-5 w-5" />
                                             <span className="text-sm font-medium">Share</span>
                                         </button>
