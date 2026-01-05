@@ -10,10 +10,10 @@ import type { OrderStatus, TrackingEvent } from "@/lib/orderTracking";
  */
 export async function GET(
     req: NextRequest,
-    { params }: { params: { orderId: string } }
+    { params }: { params: Promise<{ orderId: string }> }
 ) {
     try {
-        const orderId = params.orderId;
+        const { orderId } = await params;
 
         // Get order from Firestore
         const orderDoc = await adminDb.collection('orders').doc(orderId).get();
@@ -55,7 +55,7 @@ export async function GET(
  */
 export async function POST(
     req: NextRequest,
-    { params }: { params: { orderId: string } }
+    { params }: { params: Promise<{ orderId: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -66,7 +66,7 @@ export async function POST(
             );
         }
 
-        const orderId = params.orderId;
+        const { orderId } = await params;
         const { status, location, description } = await req.json();
 
         // Validate status
