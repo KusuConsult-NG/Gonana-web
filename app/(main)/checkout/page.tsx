@@ -433,13 +433,13 @@ export default function CheckoutPage() {
                                 <ul className="divide-y divide-border-light dark:divide-border-dark">
                                     {items.map((item) => (
                                         <li key={item.id} className="flex py-4 first:pt-0">
-                                            <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-border-light dark:border-border-dark bg-white">
+                                            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-border-light dark:border-border-dark bg-white">
                                                 <Image
                                                     src={item.image}
                                                     alt={item.name}
-                                                    className="object-cover object-center"
-                                                    fill
-                                                    sizes="80px"
+                                                    width={64}
+                                                    height={64}
+                                                    className="h-full w-full object-cover object-center"
                                                 />
                                             </div>
                                             <div className="ml-4 flex flex-1 flex-col">
