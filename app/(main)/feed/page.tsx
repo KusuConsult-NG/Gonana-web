@@ -38,12 +38,6 @@ export default function CommunityPage() {
     const [isPostingComment, setIsPostingComment] = useState(false);
     const [postComments, setPostComments] = useState<Record<string, any[]>>({});
 
-    useEffect(() => {
-        fetchPosts();
-        fetchTrendingTopics();
-        fetchUserBio();
-    }, [fetchPosts, fetchTrendingTopics, fetchUserBio]);
-
     const fetchPosts = useCallback(async () => {
         try {
             const res = await fetch("/api/posts");
@@ -83,6 +77,12 @@ export default function CommunityPage() {
             setUserBio("Passionate about sustainable agriculture. 🌾");
         }
     }, [session?.user?.id]);
+
+    useEffect(() => {
+        fetchPosts();
+        fetchTrendingTopics();
+        fetchUserBio();
+    }, [fetchPosts, fetchTrendingTopics, fetchUserBio]);
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
