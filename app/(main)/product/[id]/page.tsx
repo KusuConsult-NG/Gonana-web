@@ -38,6 +38,7 @@ export default function ProductPage() {
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string>("");
     const [quantity, setQuantity] = useState(1);
     const [selectedImage, setSelectedImage] = useState(0);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -163,10 +164,10 @@ export default function ProductPage() {
         );
     }
 
-    if (!product) {
+    if (error || !product) {
         return (
             <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-                <h2 className="text-2xl font-bold mb-4">Product not found</h2>
+                <h2 className="text-2xl font-bold mb-4">{error || "Product not found"}</h2>
                 <Link href="/" className="text-primary hover:underline">Back to Marketplace</Link>
             </div>
         );

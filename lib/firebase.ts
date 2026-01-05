@@ -28,4 +28,11 @@ if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_FIREBA
     connectStorageEmulator(storage, 'localhost', 9199);
 }
 
-export default { app, auth, db, storage };
+const firebaseClient = {
+    app,
+    auth,
+    db,
+    storage
+};
+
+export default firebaseClient;

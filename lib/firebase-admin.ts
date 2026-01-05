@@ -93,4 +93,12 @@ export async function deleteFromStorage(filePath: string) {
     }
 }
 
-export default { adminApp, adminAuth, adminDb, adminStorage };
+const firebaseAdmin = {
+    adminAuth,
+    adminDb,
+    adminStorage,
+    verifyIdToken,
+    uploadFile: uploadToStorage // Corrected from 'uploadFile' to 'uploadToStorage' to match existing function
+};
+
+export default firebaseAdmin;
