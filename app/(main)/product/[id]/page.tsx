@@ -85,20 +85,50 @@ export default function ProductPage() {
         if (!product) return;
 
         addItem({
-            id: typeof product.id === 'string' ? parseInt(product.id) || Date.now() : product.id, // Handle ID type mismatch if any
+            id: typeof product.id === 'string' ? parseInt(product.id) || Date.now() : product.id,
             name: product.name,
             price: product.price,
             quantity: quantity,
-            unit: product.unit || "unit", // Add required unit
+            unit: product.unit || "unit",
             image: product.images && product.images[0] ? product.images[0] : "",
             seller: product.seller?.name || "Unknown Seller"
         });
 
-        // Optional: Show toast or feedback
-        // For now, redirect to cart or just stay? 
-        // Let's open cart sidepanel if we had one, but we have a cart page.
-        // Maybe just alert for MVP
         alert("Added to cart!");
+    };
+
+    const handleBuyNow = async () => {
+        if (!product) return;
+
+        // TODO: Get actual user from Firebase auth
+        const userId = "anonymous"; // Replace with actual user ID from auth context
+
+        const totalAmount = product.price * quantity;
+
+        try {
+            // For MVP, just show confirmation and redirect
+            const confirmed = confirm(
+                `Purchase ${quantity} ${product.unit} of ${product.name}\n\n` +
+                `Total: ₦${totalAmount.toLocaleString()}\n\n` +
+                `Payment will be deducted from your wallet.\n\n` +
+                `Continue?`
+            );
+
+            if (!confirmed) return;
+
+            // Create order (would need to convert orders API to Firebase first)
+            alert("Order placed successfully! (Feature in development)");
+
+            // In production, this would:
+            // 1. Deduct from wallet
+            // 2. Create order in Firestore
+            // 3. Notify seller
+            // 4. Redirect to order confirmation
+
+        } catch (error) {
+            console.error("Purchase error:", error);
+            alert("Purchase failed. Please try again.");
+        }
     };
 
     if (loading) {
@@ -282,12 +312,13 @@ export default function ProductPage() {
                         </div>
 
                         <div className="pt-6 flex flex-col sm:flex-row gap-4">
-                            <button onClick={handleAddToCart} className="flex-1 bg-primary border border-transparent rounded-lg py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-lg shadow-primary/30 transition-all">
+                            <button onClick={handleBuyNow} className="flex-1 bg-primary border border-transparent rounded-lg py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-lg shadow-primary/30 transition-all">
+                                <Lock className="mr-2 h-5 w-5" />
+                                Buy Now
+                            </button>
+                            <button onClick={handleAddToCart} className="flex-1 bg-surface-light dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-lg py-3 px-8 flex items-center justify-center text-base font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all">
                                 <ShoppingBag className="mr-2 h-5 w-5" />
                                 Add to Cart
-                            </button>
-                            <button className="flex-1 bg-surface-light dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-lg py-3 px-8 flex items-center justify-center text-base font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all">
-                                Make an Offer
                             </button>
                         </div>
                         <p className="text-center text-xs text-secondary-text-light dark:text-secondary-text-dark mt-4 flex justify-center items-center gap-1">
