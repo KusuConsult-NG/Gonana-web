@@ -32,7 +32,7 @@ export default function LandingPage() {
                     </p>
 
                     <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
-                        <span className="font-bold text-primary text-2xl">Connect with 45,000+ verified farmers</span>
+                        <span className="font-bold text-primary text-2xl">Connect with 450,000+ verified farmers</span>
                         <br />
                         Join thousands of farmers and buyers trading today
                     </p>
@@ -59,7 +59,7 @@ export default function LandingPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
                     <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md">
                         <Users className="w-12 h-12 text-primary mx-auto mb-4" />
-                        <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">45,000+</div>
+                        <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">450,000+</div>
                         <div className="text-gray-600 dark:text-gray-300">Verified Farmers</div>
                     </div>
                     <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md">
@@ -101,7 +101,7 @@ export default function LandingPage() {
                                 <Users className="w-8 h-8 text-primary" />
                             </div>
                             <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Verified Community</h3>
-                            <p className="text-gray-600 dark:text-gray-400">Join 45,000+ verified farmers and buyers in Africa's largest agricultural marketplace.</p>
+                            <p className="text-gray-600 dark:text-gray-400">Join 450,000+ verified farmers and buyers in Africa's largest agricultural marketplace.</p>
                         </div>
                     </div>
                 </div>

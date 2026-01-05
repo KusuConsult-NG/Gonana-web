@@ -123,7 +123,7 @@ export default function SignupPage() {
                         </div>
                         <div>
                             <h3 className="font-semibold text-white">Join a Community</h3>
-                            <p className="text-sm text-white/80">Connect with 45,000+ verified farmers.</p>
+                            <p className="text-sm text-white/80">Connect with 450,000+ verified farmers.</p>
                         </div>
                     </div>
                 </div>
