@@ -8,10 +8,10 @@ import { adminDb } from "@/lib/firebase-admin";
  */
 export async function GET(
     req: NextRequest,
-    { params }: { params: { trackingNumber: string } }
+    { params }: { params: Promise<{ trackingNumber: string }> }
 ) {
     try {
-        const trackingNumber = params.trackingNumber;
+        const { trackingNumber } = await params;
 
         // Search for order by tracking number
         const ordersSnapshot = await adminDb
