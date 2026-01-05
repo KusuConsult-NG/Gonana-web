@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+import { getExchangeRates } from "@/lib/exchangeRates";
 
 export async function POST(req: Request) {
     try {
@@ -51,13 +52,8 @@ export async function POST(req: Request) {
         const shippingCost = shippingMethod === "logistics" ? 2500 : 0;
         totalAmountNGN += shippingCost;
 
-        // Mock Exchange Rates (In production, fetch from CoinGecko or cache)
-        const EXCHANGE_RATES = {
-            NGN_USD: 1 / 1500, // 1 NGN = 0.00066 USD
-            ETH_USD: 3500,     // 1 ETH = 3500 USD
-            BNB_USD: 600,      // 1 BNB = 600 USD
-            MATIC_USD: 0.75    // 1 MATIC = 0.75 USD
-        };
+        // Fetch live exchange rates (cached for 5 minutes)
+        const EXCHANGE_RATES = await getExchangeRates();
 
         // Determine payment details
         let amountToDeduct = totalAmountNGN;

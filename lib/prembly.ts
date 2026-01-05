@@ -61,8 +61,26 @@ export class PremblyService {
         console.log(`[Prembly] Verifying ${type}: ${number} with Key: ${this.apiKey.substring(0, 8)}...`);
 
         try {
-            /* 
-            // REAL API CALL (Uncomment to use)
+            // Check if we should use mock (for development/testing)
+            const useMock = process.env.PREMBLY_USE_MOCK === 'true';
+
+            if (useMock) {
+                console.warn('[Prembly] Using MOCK verification (set PREMBLY_USE_MOCK=false for production)');
+                return {
+                    status: true,
+                    detail: "Verification Successful (MOCK)",
+                    message: "Identity Verified Successfully (Development Mode)",
+                    data: {
+                        firstName: firstName || "John",
+                        lastName: lastName || "Doe",
+                        valid: true
+                    }
+                };
+            }
+
+            // REAL API CALL for production
+            console.log(`[Prembly] Making REAL API call to ${this.baseUrl}${endpoint}`);
+
             const response = await fetch(`${this.baseUrl}${endpoint}`, {
                 method: 'POST',
                 headers: {
@@ -75,24 +93,17 @@ export class PremblyService {
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error("Prembly API Error:", errorData);
-                return { status: false, detail: "Verification Failed", message: errorData.message || "API Error", data: null };
+                return {
+                    status: false,
+                    detail: "Verification Failed",
+                    message: errorData.message || "API Error",
+                    data: null
+                };
             }
 
-            return await response.json();
-            */
-
-            // MOCK SUCCESS for Development continuity (since we can't easily test live KYC without real IDs)
-            // In a real scenario, we would strictly use the API response.
-            return {
-                status: true,
-                detail: "Verification Successful",
-                message: "Identity Verified Successfully",
-                data: {
-                    firstName: firstName || "John",
-                    lastName: lastName || "Doe",
-                    valid: true
-                }
-            };
+            const result = await response.json();
+            console.log('[Prembly] Verification successful');
+            return result;
 
         } catch (error) {
             console.error("Prembly Integration Error:", error);

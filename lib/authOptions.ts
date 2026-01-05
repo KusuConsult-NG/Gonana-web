@@ -29,17 +29,21 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
+                    console.error("[Auth] Missing credentials");
                     return null;
                 }
+
+                console.log("[Auth] Attempting login for:", credentials.email);
 
                 try {
                     // Verify password with Firebase Auth REST API
                     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
                     if (!apiKey) {
-                        console.error("Missing Firebase API Key");
+                        console.error("[Auth] Missing Firebase API Key");
                         return null;
                     }
 
+                    console.log("[Auth] Calling Firebase Auth REST API...");
                     const authResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
                         method: 'POST',
                         body: JSON.stringify({
@@ -53,16 +57,31 @@ export const authOptions: NextAuthOptions = {
                     const authData = await authResponse.json();
 
                     if (!authResponse.ok || authData.error) {
-                        console.error("Auth error:", authData.error);
+                        // Provide specific error messages based on Firebase error codes
+                        const errorCode = authData.error?.message || "UNKNOWN_ERROR";
+                        console.error("[Auth] Firebase Auth API error:", errorCode);
+
+                        if (errorCode.includes("EMAIL_NOT_FOUND")) {
+                            console.error("[Auth] User does not exist in Firebase Auth");
+                        } else if (errorCode.includes("INVALID_PASSWORD")) {
+                            console.error("[Auth] Incorrect password");
+                        } else if (errorCode.includes("USER_DISABLED")) {
+                            console.error("[Auth] User account has been disabled");
+                        } else {
+                            console.error("[Auth] Full error details:", authData.error);
+                        }
                         return null;
                     }
 
                     const uid = authData.localId;
+                    console.log("[Auth] Firebase Auth successful for UID:", uid);
 
                     // Get user data from Firestore
+                    console.log("[Auth] Fetching user data from Firestore...");
                     const userDoc = await adminDb.collection('users').doc(uid).get();
 
                     if (!userDoc.exists) {
+                        console.warn("[Auth] User exists in Auth but not in Firestore, creating basic profile");
                         // Optional: Create user in Firestore if only in Auth (migration)
                         return {
                             id: uid,
@@ -73,6 +92,7 @@ export const authOptions: NextAuthOptions = {
                     }
 
                     const userData = userDoc.data()!;
+                    console.log("[Auth] Login successful for user:", userData.email);
                     return {
                         id: uid,
                         email: userData.email,
@@ -80,7 +100,7 @@ export const authOptions: NextAuthOptions = {
                         image: userData.image || null,
                     };
                 } catch (error) {
-                    console.error("Authorize error:", error);
+                    console.error("[Auth] Unexpected error during authorization:", error);
                     return null;
                 }
             },
@@ -151,14 +171,40 @@ export const authOptions: NextAuthOptions = {
             }
             return true;
         },
-        async jwt({ token, user, account }) {
+        async jwt({ token, user, account, trigger }) {
             // On initial sign in
             if (user) {
                 token.uid = user.id;
                 token.email = user.email;
                 token.name = user.name;
                 token.picture = user.image;
+                token.lastUserFetch = Date.now(); // Track when we last fetched user data
             }
+
+            // Fetch fresh user data from Firestore if:
+            // 1. This is a new token (no lastUserFetch)
+            // 2. It's been more than 5 minutes since the last fetch
+            // 3. The session is being updated (trigger === 'update')
+            const shouldRefresh = !token.lastUserFetch ||
+                (Date.now() - (token.lastUserFetch as number)) > 5 * 60 * 1000 ||
+                trigger === 'update';
+
+            if (token.uid && shouldRefresh) {
+                try {
+                    const userDoc = await adminDb.collection('users').doc(token.uid as string).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        token.name = userData?.name || token.name;
+                        token.picture = userData?.image || token.picture;
+                        token.email = userData?.email || token.email;
+                        token.lastUserFetch = Date.now();
+                    }
+                } catch (error) {
+                    console.error("[Auth] Error fetching user data in JWT callback:", error);
+                    // Keep existing token data if fetch fails
+                }
+            }
+
             return token;
         },
         async session({ session, token }) {

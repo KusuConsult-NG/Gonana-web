@@ -5,12 +5,15 @@ An agricultural marketplace platform built with Next.js, Firebase, and Paystack 
 ## Features
 
 - 🌾 Agricultural product marketplace
-- 💳 Secure payment processing (Paystack & Wallet)
-- 🔐 Firebase Authentication
-- 👤 User profiles and KYC verification
-- 💰 Multi-currency wallet system (NGN, USD, USDT, USDC)
+- 💳 Secure payment processing (Paystack & Multi-currency Wallet)
+- 🔐 Firebase Authentication with NextAuth
+- 👤 User profiles with KYC verification (Prembly)
+- 💰 Multi-currency wallet system (NGN, USD, USDT, USDC, ETH, BNB, MATIC)
+- 🔗 Multi-chain crypto wallet generation (post-KYC)
 - 📦 Order management and tracking
+- 💬 Community feed with social features
 - 📱 Responsive design with dark mode support
+- 🗄️ Cloud database with Firebase Firestore
 
 ## Getting Started
 
@@ -37,13 +40,7 @@ cp .env.example .env.local
 
 Then edit `.env.local` with your actual credentials (see Environment Variables section below).
 
-4. Generate Prisma client:
-
-```bash
-npm run postinstall
-```
-
-5. Run the development server:
+4. Run the development server:
 
 ```bash
 npm run dev
@@ -68,22 +65,46 @@ See `.env.example` for a complete list of required environment variables.
 
 ```
 ├── app/                  # Next.js app directory
-│   ├── (auth)/          # Authentication pages
-│   ├── (main)/          # Main application pages
-│   └── api/             # API routes
+│   ├── (auth)/          # Authentication pages (login, signup)
+│   ├── (main)/          # Main application pages (marketplace, wallet, feed)
+│   └── api/             # API routes (25+ endpoints)
 ├── components/          # Reusable React components
-├── context/            # React context providers
+├── context/            # React context providers (Auth, Cart)
 ├── lib/                # Utility functions and configurations
-├── prisma/             # Database schema
+│   ├── firebase.ts     # Firebase client SDK
+│   ├── firebase-admin.ts # Firebase Admin SDK
+│   ├── paystack.ts     # Paystack payment integration
+│   └── crypto/         # Crypto wallet utilities
+├── types/              # TypeScript type definitions
 └── public/             # Static assets
 ```
 
+## Database
+
+This application uses **Firebase Firestore** as its primary database. All data (users, products, orders, wallets, transactions) is stored in Firestore collections.
+
+> **Note**: While `.env` files contain a `DATABASE_URL` variable, this is not used. The app exclusively uses Firebase Firestore.
+
+**Key Collections:**
+- `users` - User profiles and authentication data
+- `products` - Product listings
+- `orders` - Order history and status
+- `wallets` - Multi-currency wallet balances
+- `transactions` - Transaction history
+- `cryptoWallets` - Crypto wallet addresses (post-KYC)
+- `posts` - Community feed posts
+- `encryptedKeys` - Encrypted private keys for crypto wallets
+
 ## API Routes
 
-All API routes under `/api/*` require Firebase authentication via Bearer token, except:
+This app has **25+ API endpoints** covering authentication, products, orders, payments, wallet operations, KYC, crypto, and social features.
+
+Most API routes require Firebase authentication via Bearer token, except:
 - `/api/auth/*` - NextAuth endpoints
 - `/api/products` (GET) - Public product listing
 - `/api/signup` - User registration
+
+**See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete API reference.**
 
 ### Authentication
 
@@ -97,13 +118,19 @@ Authorization: Bearer <firebase-id-token>
 
 ### Pre-Deployment Checklist
 
-- [ ] Update `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` to production key
+- [ ] Update `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` to production key (currently using test key)
 - [ ] Set `NEXTAUTH_URL` to your production domain
-- [ ] Migrate from SQLite to PostgreSQL/MySQL (update `DATABASE_URL`)
+- [ ] Set appropriate Firebase Firestore security rules (see `firestore.rules`)
+- [ ] Configure Firebase Storage CORS for your domain
+- [ ] Enable Paystack webhooks for async payment verification
+- [ ] Un-mock KYC verification (enable real Prembly API calls in `/api/kyc/verify/route.ts`)
+- [ ] Implement live exchange rates (replace hard-coded rates in `/api/orders/route.ts`)
+- [ ] Set up Redis for production rate limiting (optional, falls back to in-memory)
+- [ ] Verify Sentry error monitoring is working
 - [ ] Run `npm run build` to verify production build
-- [ ] Set appropriate Firebase security rules
-- [ ] Configure CORS for your domain in Firebase
-- [ ] Enable Paystack webhooks for payment verification
+- [ ] Test all critical user flows manually
+
+**See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed readiness assessment.**
 
 ### Build for Production
 
@@ -122,14 +149,33 @@ vercel deploy --prod
 
 Make sure to configure all environment variables in the Vercel dashboard.
 
+## Testing
+
+**Current Status**: Manual testing only (no automated tests).
+
+See [TEST_AUTH.md](./TEST_AUTH.md) for authentication testing guide.
+
+**Manual Test Checklist:**
+1. Authentication flow (signup → login → logout)
+2. Marketplace browsing and product details
+3. Shopping cart and checkout
+4. Wallet top-up and payments
+5. Order creation and tracking
+6. Community feed (create, like, comment)
+7. Profile updates and file uploads
+8. KYC submission and wallet generation
+
 ## Security
 
-- All API routes are protected with Firebase authentication
-- Passwords are never stored (Firebase Auth handles this)
+- All API routes protected with Firebase authentication
+- Passwords never stored (Firebase Auth handles this)
+- Private keys encrypted with AES-256-GCM before storage
 - Security headers configured in `next.config.ts`
 - HTTPS-only in production (enforced via headers)
+- Rate limiting on sensitive endpoints (KYC, crypto operations)
 - Input validation on all API endpoints
 - Environment variables for sensitive data
+- Firebase security rules for Firestore and Storage
 
 ## Contributing
 
