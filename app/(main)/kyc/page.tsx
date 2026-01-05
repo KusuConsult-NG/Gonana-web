@@ -18,14 +18,6 @@ export default function KYCPage() {
     const router = useRouter();
     const [step, setStep] = useState(1);
 
-    useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login?callbackUrl=/kyc');
-        }
-    }, [user, loading, router]);
-
-    if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
-    if (!user) return null;
     const [documentType, setDocumentType] = useState<DocumentType>("");
     const [documentNumber, setDocumentNumber] = useState("");
     const [expiryDate, setExpiryDate] = useState("");
@@ -57,6 +49,15 @@ export default function KYCPage() {
         maxFiles: 1,
         maxSize: 5 * 1024 * 1024,
     });
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login?callbackUrl=/kyc');
+        }
+    }, [user, loading, router]);
+
+    if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    if (!user) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
