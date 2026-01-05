@@ -98,13 +98,13 @@ export function Navbar({ onMenuClick }: NavbarProps) {
                         <div className="flex items-center gap-2">
                             {user ? (
                                 <div className="text-right hidden lg:block">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white leading-none">{user.name?.split(' ')[0]}</p>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white leading-none">{user.displayName?.split(' ')[0] || 'User'}</p>
                                     <p className="text-xs text-gray-500 truncate max-w-[100px]">{user.email}</p>
                                 </div>
                             ) : null}
                             <Link href={user ? "/settings" : "/login"} className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
-                                {user?.image ? (
-                                    <Image src={user.image} alt="Profile" width={32} height={32} className="object-cover h-full w-full" />
+                                {user?.photoURL ? (
+                                    <Image src={user.photoURL} alt="Profile" width={32} height={32} className="object-cover h-full w-full" />
                                 ) : (
                                     <User className="h-5 w-5 text-primary" />
                                 )}
