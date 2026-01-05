@@ -189,17 +189,67 @@ export default function CheckoutPage() {
                 <section className="lg:col-span-7 space-y-8">
                     <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
                         <div className="p-6 border-b border-border-light dark:border-border-dark">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wide">Shipping To</h3>
-                                    <p className="mt-1 text-text-light dark:text-text-dark font-medium">
-                                        {shippingData.fullName || 'Please fill shipping form below'}
-                                    </p>
-                                    {shippingData.address && (
-                                        <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark mt-1">
-                                            {shippingData.address}, {shippingData.city}, {shippingData.state}
-                                        </p>
-                                    )}
+                            <h3 className="text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wide mb-4">Shipping Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-light dark:text-text-dark">Full Name <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        placeholder="John Doe"
+                                        value={shippingData.fullName}
+                                        onChange={(e) => setShippingData({ ...shippingData, fullName: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-light dark:text-text-dark">Phone Number <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="tel"
+                                        placeholder="+234..."
+                                        value={shippingData.phone}
+                                        onChange={(e) => setShippingData({ ...shippingData, phone: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-sm font-medium text-text-light dark:text-text-dark">Street Address <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        placeholder="123 Farm Road, Lagos"
+                                        value={shippingData.address}
+                                        onChange={(e) => setShippingData({ ...shippingData, address: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-light dark:text-text-dark">City <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        placeholder="Lagos"
+                                        value={shippingData.city}
+                                        onChange={(e) => setShippingData({ ...shippingData, city: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-light dark:text-text-dark">State <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        placeholder="Lagos State"
+                                        value={shippingData.state}
+                                        onChange={(e) => setShippingData({ ...shippingData, state: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-light dark:text-text-dark">Postal Code</label>
+                                    <input
+                                        type="text"
+                                        placeholder="100001"
+                                        value={shippingData.postalCode}
+                                        onChange={(e) => setShippingData({ ...shippingData, postalCode: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
                                 </div>
                             </div>
                         </div>
