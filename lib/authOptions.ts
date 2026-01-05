@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 
 export const authOptions: NextAuthOptions = {
+    debug: process.env.NODE_ENV === "development",
     // Removed PrismaAdapter - using JWT sessions with Firebase backend
     providers: [
         // Only add Google provider if credentials are configured
