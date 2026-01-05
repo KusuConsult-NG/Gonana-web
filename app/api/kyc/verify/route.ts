@@ -32,8 +32,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
         }
 
-        const body = await req.json();
-        const { documentType, documentNumber, image } = body;
+        const { documentType, documentNumber, image, idType, idNumber, dateOfBirth, address, firstName, lastName } = await req.json();
 
         if (!documentType || !documentNumber) {
             return NextResponse.json({ error: "Missing document details" }, { status: 400 });
