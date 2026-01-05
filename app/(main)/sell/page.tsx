@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { PRODUCT_CATEGORIES } from "@/lib/categories";
 
 // Dynamic import for react-dropzone to avoid SSR issues
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const useDropzone = typeof window !== 'undefined' ? require('react-dropzone').useDropzone : () => ({
     getRootProps: () => ({}),
     getInputProps: () => ({}),

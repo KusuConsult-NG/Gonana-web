@@ -11,6 +11,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 // Import useDropzone dynamically to avoid SSR issues
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const useDropzone = typeof window !== 'undefined' ? require('react-dropzone').useDropzone : () => ({
     getRootProps: () => ({}),
     getInputProps: () => ({}),
