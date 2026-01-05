@@ -19,6 +19,14 @@ export default function SecurityPage() {
         { id: 3, action: "Failed Login", device: "Firefox / Windows", location: "London, UK", time: "5 days ago", status: "failed" },
     ]);
 
+    // Password change state
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+    });
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+
     // Fetch initial status
     useEffect(() => {
         fetch('/api/auth/2fa/status')
@@ -30,8 +38,7 @@ export default function SecurityPage() {
     const handleToggle2fa = async () => {
         if (is2faEnabled) {
             if (confirm("Are you sure you want to disable 2FA? This will decrease your account security.")) {
-                // TODO: Implement disable API
-                alert("Please contact support to disable 2FA.");
+                handleDisable2FA();
             }
         } else {
             setIsSettingUp(true);
@@ -48,6 +55,46 @@ export default function SecurityPage() {
             } finally {
                 setIsSettingUp(false);
             }
+        }
+    };
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            alert("New passwords don't match");
+            return;
+        }
+
+        if (passwordData.newPassword.length < 8) {
+            alert("New password must be at least 8 characters");
+            return;
+        }
+
+        setIsChangingPassword(true);
+
+        try {
+            const res = await fetch('/api/auth/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                alert('Password changed successfully!');
+                setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+            } else {
+                alert(data.error || 'Failed to change password');
+            }
+        } catch (error) {
+            alert('Error changing password');
+        } finally {
+            setIsChangingPassword(false);
         }
     };
 
@@ -179,12 +226,39 @@ export default function SecurityPage() {
                         </div>
                     </div>
 
-                    <form className="space-y-4">
-                        <Input type="password" label="Current Password" placeholder="••••••••" />
-                        <Input type="password" label="New Password" placeholder="••••••••" />
-                        <Input type="password" label="Confirm New Password" placeholder="••••••••" />
+                    <form onSubmit={handlePasswordChange} className="space-y-4">
+                        <Input
+                            type="password"
+                            label="Current Password"
+                            placeholder="••••••••"
+                            value={passwordData.currentPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                            required
+                        />
+                        <Input
+                            type="password"
+                            label="New Password"
+                            placeholder="••••••••"
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                            required
+                        />
+                        <Input
+                            type="password"
+                            label="Confirm New Password"
+                            placeholder="••••••••"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                            required
+                        />
                         <div className="flex justify-end">
-                            <Button variant="outline">Update Password</Button>
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                disabled={isChangingPassword}
+                            >
+                                {isChangingPassword ? "Updating..." : "Update Password"}
+                            </Button>
                         </div>
                     </form>
                 </div>
