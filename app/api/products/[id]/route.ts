@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { adminDb } from "@/lib/firebase-admin";
 
 export async function GET(
     request: Request,
@@ -7,18 +7,22 @@ export async function GET(
 ) {
     const params = await props.params;
     const id = params.id;
-    try {
-        const product = await prisma.product.findUnique({
-            where: { id },
-            include: { seller: { select: { name: true, isKycVerified: true, image: true } } }
-        });
 
-        if (!product) {
+    try {
+        const productDoc = await adminDb.collection('products').doc(id).get();
+
+        if (!productDoc.exists) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
+        const product = {
+            id: productDoc.id,
+            ...productDoc.data()
+        };
+
         return NextResponse.json(product);
-    } catch {
+    } catch (error) {
+        console.error("Product fetch error:", error);
         return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
     }
 }

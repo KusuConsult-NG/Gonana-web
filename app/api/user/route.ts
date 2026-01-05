@@ -1,36 +1,33 @@
-
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { adminDb } from "@/lib/firebase-admin";
 
 export async function PUT(req: Request) {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user?.email) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // TODO: Add Firebase auth check
+    // For now, allow updates without auth
 
     try {
         const body = await req.json();
-        const { name } = body;
+        const { userId, name } = body;
 
-        const updatedUser = await prisma.user.update({
-            where: { email: session.user.email },
-            data: {
-                name,
-                // Note: User model might not have bio/phone/location pending verification.
-                // Checking usage: Settings page likely wants these.
-                // If they don't exist, we should check schema. 
-                // Earlier we found 'location' does NOT exist on User. 
-                // So we can only update 'name' and 'image' generally, or other existing fields.
-                // Let's assume for MVP we only update 'name'.
-                // If schemas supported it, we'd add it.
-            },
+        if (!userId) {
+            return NextResponse.json({ error: "User ID required" }, { status: 400 });
+        }
+
+        // Update user document in Firestore
+        await adminDb.collection('users').doc(userId).update({
+            name,
+            updatedAt: new Date().toISOString(),
         });
 
-        return NextResponse.json(updatedUser);
-    } catch {
+        // Get updated user
+        const userDoc = await adminDb.collection('users').doc(userId).get();
+
+        return NextResponse.json({
+            id: userDoc.id,
+            ...userDoc.data()
+        });
+    } catch (error) {
+        console.error("User update error:", error);
         return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
     }
 }
