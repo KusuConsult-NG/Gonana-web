@@ -8,13 +8,14 @@ import { cn } from "@/lib/utils";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { useParams, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/context/AuthContext";
+import { useSession } from "next-auth/react";
 
 export default function ProductPage() {
     const params = useParams();
     const router = useRouter();
     const { addItem } = useCart();
-    const { user } = useAuth();
+    const { data: session } = useSession();
+    const user = session?.user;
 
     interface Product {
         id: string | number;
@@ -130,7 +131,7 @@ export default function ProductPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: user.uid,
+                    userId: user?.id,
                     items: [{
                         id: product.id,
                         name: product.name,

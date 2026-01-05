@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 type DocumentType = "passport" | "national_id" | "drivers_license" | "";
 
 export default function KYCPage() {
-    const { user, loading } = useAuth();
+    const { data: session, status } = useSession();
     const router = useRouter();
     const [step, setStep] = useState(1);
 
@@ -51,13 +51,13 @@ export default function KYCPage() {
     });
 
     useEffect(() => {
-        if (!loading && !user) {
+        if (status !== "loading" && !session) {
             router.push('/login?callbackUrl=/kyc');
         }
-    }, [user, loading, router]);
+    }, [session, status, router]);
 
-    if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
-    if (!user) return null;
+    if (status === "loading") return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    if (!session?.user) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -69,8 +69,7 @@ export default function KYCPage() {
             const response = await fetch('/api/kyc/verify', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${await user?.getIdToken()}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     documentType,
