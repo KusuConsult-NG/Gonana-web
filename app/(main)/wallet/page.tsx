@@ -24,15 +24,27 @@ export default function WalletPage() {
     const [selectedCurrency, setSelectedCurrency] = useState<Currency>("NGN");
     const [amount, setAmount] = useState("");
     const reportRef = useRef<HTMLDivElement>(null);
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
 
-    // Mock Transactions
-    const transactions = [
-        { id: "TX1001", type: "deposit", amount: 50000, currency: "NGN", date: "2024-05-20", status: "completed", desc: "Bank Deposit" },
-        { id: "TX1002", type: "purchase", amount: 12500, currency: "NGN", date: "2024-05-18", status: "completed", desc: "Purchase: Organic Maize" },
-        { id: "TX1003", type: "yield", amount: 2.50, currency: "USDT", date: "2024-05-15", status: "completed", desc: "Staking Reward" },
-        { id: "TX1004", type: "withdrawal", amount: 5000, currency: "NGN", date: "2024-05-10", status: "completed", desc: "Withdrawal to Bank" },
-        { id: "TX1005", type: "deposit", amount: 100, currency: "USDC", date: "2024-05-01", status: "completed", desc: "Crypto Deposit" },
-    ];
+    // Fetch real transactions
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            try {
+                const res = await fetch('/api/transactions');
+                if (res.ok) {
+                    const data = await res.json();
+                    setTransactions(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch transactions:', error);
+            } finally {
+                setIsLoadingTransactions(false);
+            }
+        };
+
+        fetchTransactions();
+    }, []);
 
     const generatePDF = async () => {
         if (!reportRef.current) return;
