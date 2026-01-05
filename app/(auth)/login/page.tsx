@@ -114,7 +114,7 @@ export default function LoginPage() {
                                     setLoginError("Invalid email or password");
                                 } else {
                                     setLoginError("");
-                                    router.push("/");
+                                    router.push("/marketplace");
                                     router.refresh();
                                 }
                             } catch (error) {
@@ -131,7 +131,7 @@ export default function LoginPage() {
                                         name="email"
                                         type="email"
                                         required
-                                        defaultValue="farmer@test.com"
+                                        // defaultValue="farmer@test.com"
                                         placeholder="farmer@example.com"
                                         className="pl-10 block w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm py-3 transition-colors outline-none"
                                     />
@@ -150,7 +150,7 @@ export default function LoginPage() {
                                         name="password"
                                         type={showPassword ? "text" : "password"}
                                         required
-                                        defaultValue="password"
+                                        // defaultValue="password"
                                         placeholder="••••••••"
                                         className="pl-10 block w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm py-3 transition-colors outline-none"
                                     />
@@ -188,7 +188,7 @@ export default function LoginPage() {
 
                                 <div className="mt-6">
                                     <button
-                                        onClick={() => signIn('google', { callbackUrl: '/' })}
+                                        onClick={() => signIn('google', { callbackUrl: '/marketplace' })}
                                         className="w-full inline-flex justify-center items-center gap-2 py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                     >
                                         <svg className="h-5 w-5" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
