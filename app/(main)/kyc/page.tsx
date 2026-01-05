@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
+import { useState, useCallback, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { Upload, FileText, Shield, ChevronLeft, ChevronRight, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,7 +9,13 @@ import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+
+// Import useDropzone dynamically to avoid SSR issues
+const useDropzone = typeof window !== 'undefined' ? require('react-dropzone').useDropzone : () => ({
+    getRootProps: () => ({}),
+    getInputProps: () => ({}),
+    isDragActive: false
+});
 
 type DocumentType = "passport" | "national_id" | "drivers_license" | "";
 

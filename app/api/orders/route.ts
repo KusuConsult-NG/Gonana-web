@@ -3,6 +3,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { getExchangeRates } from "@/lib/exchangeRates";
+import { generateTrackingNumber, createInitialTrackingEvent, calculateEstimatedDelivery } from "@/lib/orderTracking";
 
 export async function POST(req: Request) {
     try {
@@ -105,6 +106,11 @@ export async function POST(req: Request) {
             }, { status: 400 });
         }
 
+        // Generate tracking number and estimated delivery
+        const trackingNumber = generateTrackingNumber();
+        const estimatedDelivery = calculateEstimatedDelivery(shippingMethod || "logistics");
+        const initialTrackingEvent = createInitialTrackingEvent('CONFIRMED');
+
         // Create order
         const orderData = {
             buyerId: userId,
@@ -114,11 +120,15 @@ export async function POST(req: Request) {
             currency: "NGN",
             paymentCurrency: currencyToDeduct,
             paymentAmount: amountToDeduct,
-            status: "PAID",
+            status: "CONFIRMED",
+            orderStatus: "CONFIRMED" as const,
             paymentMethod: paymentMethod || "wallet",
             paymentReference: `ORD-${Date.now()}`,
             shippingMethod: shippingMethod || "logistics",
             network: network || "n/a",
+            trackingNumber,
+            estimatedDelivery,
+            trackingEvents: [initialTrackingEvent],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };

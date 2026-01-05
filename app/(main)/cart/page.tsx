@@ -40,13 +40,13 @@ export default function CartPage() {
                             {cartItems.map((item) => (
                                 <div key={item.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                     <div className="flex flex-col sm:flex-row gap-6">
-                                        <div className="h-24 w-24 sm:h-32 sm:w-32 flex-shrink-0 overflow-hidden rounded-lg border border-border-light dark:border-border-dark bg-white">
+                                        <div className="relative h-24 w-24 sm:h-32 sm:w-32 flex-shrink-0 overflow-hidden rounded-lg border border-border-light dark:border-border-dark bg-white">
                                             <Image
                                                 src={item.image}
                                                 alt={item.name}
-                                                className="object-cover object-center"
-                                                fill
-                                                sizes="(max-width: 768px) 100px, 150px"
+                                                width={128}
+                                                height={128}
+                                                className="h-full w-full object-cover object-center"
                                             />
                                         </div>
                                         <div className="flex flex-1 flex-col justify-between">

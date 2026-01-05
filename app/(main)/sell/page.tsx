@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
 import { Upload, X, Info, AlertTriangle, Truck, MapPin, DollarSign, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -10,6 +9,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { PRODUCT_CATEGORIES } from "@/lib/categories";
+
+// Dynamic import for react-dropzone to avoid SSR issues
+const useDropzone = typeof window !== 'undefined' ? require('react-dropzone').useDropzone : () => ({
+    getRootProps: () => ({}),
+    getInputProps: () => ({}),
+    isDragActive: false
+});
 
 export default function SellPage() {
     const router = useRouter();
@@ -76,10 +82,27 @@ export default function SellPage() {
         setIsLoading(true);
 
         try {
-            // Mock image upload - in real app, upload to S3/Cloudinary here
-            // For now, allow the blob URLs (though they won't persist well across sessions) 
-            // OR use placeholders. Let's use placeholders for stability.
-            const imageUrls = images.map((_, i) => `https://via.placeholder.com/400?text=Product+${i + 1}`);
+            // Upload images to Firebase Storage
+            const imageUrls: string[] = [];
+
+            for (const image of images) {
+                const formData = new FormData();
+                formData.append('file', image);
+
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    imageUrls.push(uploadData.url);
+                } else {
+                    console.error('Failed to upload image:', image.name);
+                    // Use placeholder if upload fails
+                    imageUrls.push('https://via.placeholder.com/400?text=Product');
+                }
+            }
 
             const payload = {
                 name: formData.title,
@@ -100,7 +123,8 @@ export default function SellPage() {
             });
 
             if (res.ok) {
-                router.push("/?success=product-created");
+                alert('Product listed successfully!');
+                router.push("/marketplace");
             } else {
                 const err = await res.json();
                 alert(`Error: ${err.error || "Failed to create product"}`);
