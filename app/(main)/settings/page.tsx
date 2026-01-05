@@ -44,7 +44,7 @@ export default function ProfileSettingsPage() {
                         email: data.email || "",
                         bio: data.bio || "",
                         location: data.location || "",
-                        avatar: data.profilePicture || "", // Firestore field might be different? Using profilePicture based on common patterns, or image
+                        avatar: data.image || "", // Firestore stores as 'image'
                         age: data.age?.toString() || "",
                         gender: data.gender || "Prefer not to say"
                     });
@@ -61,13 +61,36 @@ export default function ProfileSettingsPage() {
         }
     }, [session]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Note: In a real app, upload this file to storage immediately or on save
-            // For now, local preview
-            const url = URL.createObjectURL(file);
-            setFormData(prev => ({ ...prev, avatar: url }));
+            // Show local preview immediately
+            const localUrl = URL.createObjectURL(file);
+            setFormData(prev => ({ ...prev, avatar: localUrl }));
+
+            // Upload to server
+            setIsLoading(true);
+            try {
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', file);
+
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: uploadFormData,
+                });
+
+                if (uploadRes.ok) {
+                    const { url } = await uploadRes.json();
+                    setFormData(prev => ({ ...prev, avatar: url }));
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Failed to upload image');
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -87,7 +110,8 @@ export default function ProfileSettingsPage() {
                     bio: formData.bio,
                     location: formData.location,
                     age: formData.age,
-                    gender: formData.gender
+                    gender: formData.gender,
+                    image: formData.avatar // Include profile picture URL
                 }),
             });
 

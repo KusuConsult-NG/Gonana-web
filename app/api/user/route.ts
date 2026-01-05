@@ -38,7 +38,7 @@ export async function PUT(req: Request) {
         const userId = session.user.id;
 
         const body = await req.json();
-        const { firstName, lastName, bio, location, age, gender } = body;
+        const { firstName, lastName, bio, location, age, gender, image } = body;
 
         // Construct update object with only defined fields
         const updateData: any = {
@@ -52,6 +52,7 @@ export async function PUT(req: Request) {
         if (location !== undefined) updateData.location = location;
         if (age) updateData.age = parseInt(age);
         if (gender) updateData.gender = gender;
+        if (image) updateData.image = image; // Save profile picture URL
 
         await adminDb.collection('users').doc(userId).update(updateData);
 
