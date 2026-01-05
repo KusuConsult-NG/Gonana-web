@@ -50,6 +50,58 @@ export default function MarketplacePage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Flash Sales Section */}
+                <div className="mb-10">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                                <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full animate-pulse">⚡ FLASH SALE</span>
+                                Limited Time Offers
+                            </h2>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Ends in 2h 45m 12s</p>
+                        </div>
+                        <Link href="/marketplace" className="text-primary font-semibold hover:underline flex items-center gap-1">
+                            View All <ChevronRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {products.slice(0, 4).map((product) => (
+                            <div key={product.id} className="relative">
+                                <div className="absolute top-2 right-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                    -25%
+                                </div>
+                                <ProductCard product={product} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Hot Deals Section */}
+                <div className="mb-10 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/10 dark:to-red-900/10 rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                                <span className="text-3xl">🔥</span>
+                                Hot Deals Today
+                            </h2>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Don't miss out on these amazing prices!</p>
+                        </div>
+                        <Link href="/marketplace" className="text-primary font-semibold hover:underline flex items-center gap-1">
+                            Shop All Deals <ChevronRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {products.slice(4, 8).map((product) => (
+                            <div key={product.id} className="relative">
+                                <div className="absolute top-2 left-2 z-10 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                    🔥 HOT
+                                </div>
+                                <ProductCard product={product} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8">

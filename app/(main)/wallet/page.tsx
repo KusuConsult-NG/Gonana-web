@@ -12,6 +12,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import WithdrawForm from "@/components/wallet/WithdrawForm";
 
 type Tab = "overview" | "deposit" | "withdraw" | "earn" | "transactions";
 type Currency = "NGN" | "USD" | "USDT" | "USDC";
@@ -284,19 +285,33 @@ export default function WalletPage() {
                 )}
 
                 {(activeTab === "deposit" || activeTab === "withdraw") && (
-                    <div className="max-w-xl mx-auto bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-8 text-center">
-                        <div className="h-16 w-16 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
-                            {activeTab === "deposit" ? <ArrowDownLeft className="h-8 w-8 text-green-600" /> : <ArrowUpRight className="h-8 w-8 text-red-600" />}
+                    <div className="max-w-xl mx-auto bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-8">
+                        <div className="text-center mb-8">
+                            <div className="h-16 w-16 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                                {activeTab === "deposit" ? <ArrowDownLeft className="h-8 w-8 text-green-600" /> : <ArrowUpRight className="h-8 w-8 text-red-600" />}
+                            </div>
+                            <h2 className="text-2xl font-bold text-text-light dark:text-text-dark mb-2">
+                                {activeTab === "deposit" ? "Deposit Funds" : "Withdraw Funds"}
+                            </h2>
+                            {activeTab === "deposit" && (
+                                <p className="text-secondary-text-light dark:text-secondary-text-dark">
+                                    Send crypto to your Gonana wallet address below.
+                                </p>
+                            )}
                         </div>
-                        <h2 className="text-2xl font-bold text-text-light dark:text-text-dark mb-2">
-                            {activeTab === "deposit" ? "Deposit Funds" : "Withdraw Funds"}
-                        </h2>
-                        <p className="text-secondary-text-light dark:text-secondary-text-dark mb-8">
-                            This feature is coming soon in the production release.
-                        </p>
-                        <Button variant="outline" onClick={() => setActiveTab("overview")}>
-                            Back to Wallet
-                        </Button>
+
+                        {activeTab === "withdraw" ? (
+                            <WithdrawForm onSuccess={() => setActiveTab("overview")} />
+                        ) : (
+                            <div className="text-center">
+                                <p className="text-secondary-text-light dark:text-secondary-text-dark mb-8">
+                                    Deposit feature is coming soon.
+                                </p>
+                                <Button variant="outline" onClick={() => setActiveTab("overview")}>
+                                    Back to Wallet
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

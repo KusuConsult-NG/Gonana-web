@@ -104,20 +104,18 @@ export default function LoginPage() {
                             const password = e.currentTarget.password.value;
 
                             try {
-                                // Call login API
-                                const response = await fetch('/api/login', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ email, password }),
+                                const result = await signIn('credentials', {
+                                    redirect: false,
+                                    email,
+                                    password,
                                 });
 
-                                const data = await response.json();
-
-                                if (response.ok) {
-                                    setLoginError("");
-                                    router.push("/"); // Redirect to marketplace
+                                if (result?.error) {
+                                    setLoginError("Invalid email or password");
                                 } else {
-                                    setLoginError(data.error || "Invalid email or password");
+                                    setLoginError("");
+                                    router.push("/");
+                                    router.refresh();
                                 }
                             } catch (error) {
                                 setLoginError("An error occurred during login");

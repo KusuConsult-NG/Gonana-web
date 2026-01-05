@@ -46,9 +46,10 @@ export default function ProductPage() {
     useEffect(() => {
         if (params.id) {
             fetchProduct(params.id as string);
-            fetchRelatedProducts(); // Call fetchRelatedProducts here
+            fetchRelatedProducts();
         }
-    }, [params.id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [params.id]); // fetchRelatedProducts is stable but not needed in deps due to eslint-disable
 
     const fetchProduct = async (id: string) => {
         try {
@@ -80,7 +81,7 @@ export default function ProductPage() {
                 })));
             }
         } catch (err) {
-            console.error("Failed to load related products", err);
+            // Failed to load related products - silent fail
         }
     };
 

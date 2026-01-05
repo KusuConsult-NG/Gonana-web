@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+import { adminDb, verifyIdToken } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
     try {
+        // Verify Firebase authentication
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
+        }
+
+        const token = authHeader.split("Bearer ")[1];
+        let decodedToken;
+        try {
+            decodedToken = await verifyIdToken(token);
+        } catch (error) {
+            return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
+        }
+
         const body = await req.json();
         const { name, description, price, quantity, unit, location, category, deliveryMode, images } = body;
 
-        // For now, create products without auth (will add Firebase auth later)
-        // TODO: Get actual user ID from Firebase Auth token
-        const sellerId = "anonymous";
-        const sellerName = "Test Seller";
+        // Use authenticated user ID
+        const sellerId = decodedToken.uid;
+        const sellerName = decodedToken.name || decodedToken.email || "Unknown Seller";
 
         const productData = {
             sellerId,
@@ -37,7 +50,6 @@ export async function POST(req: Request) {
             ...productData
         }, { status: 201 });
     } catch (error) {
-        console.error("Product creation error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
@@ -56,7 +68,6 @@ export async function GET() {
 
         return NextResponse.json(products);
     } catch (error) {
-        console.error("Products fetch error:", error);
         return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
     }
 }

@@ -2,12 +2,15 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-type Currency = "NGN" | "USD" | "USDT" | "USDC";
+import { ExchangeRates } from "@/lib/crypto/exchangeRates";
+
+type Currency = "NGN" | "USD" | "USDT" | "USDC" | "ETH" | "BNB" | "MATIC";
 
 interface WalletState {
     isKycVerified: boolean;
     balances: Record<Currency, number>;
-    exchangeRate: number; // NGN per USD
+    formattedRates: ExchangeRates; // Live rates
+    exchangeRate: number; // NGN per USD (Backward compatibility)
 }
 
 interface WalletContextType extends WalletState {
@@ -27,11 +30,39 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         NGN: 0,
         USD: 0,
         USDT: 0,
-        USDC: 0
+        USDC: 0,
+        ETH: 0,
+        BNB: 0,
+        MATIC: 0
     });
 
-    // Mock Exchange Rate: 1 USD = 1500 NGN
-    const exchangeRate = 1500;
+    const [formattedRates, setFormattedRates] = useState<ExchangeRates>({
+        NGN_USD: 1 / 1500,
+        ETH_USD: 2300,
+        BNB_USD: 310,
+        MATIC_USD: 0.85,
+        USDT_USD: 1,
+        USDC_USD: 1,
+    });
+
+    // Fetch live rates
+    useEffect(() => {
+        const fetchRates = async () => {
+            try {
+                const res = await fetch('/api/exchange-rates');
+                const data = await res.json();
+                if (data.rates) {
+                    setFormattedRates(data.rates);
+                }
+            } catch (error) {
+                console.error("Failed to fetch rates:", error);
+            }
+        };
+
+        fetchRates();
+        const interval = setInterval(fetchRates, 60000); // Every minute
+        return () => clearInterval(interval);
+    }, []);
 
     // Load state from local storage on mount (simulation persistence)
     useEffect(() => {
@@ -46,7 +77,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
                 NGN: 2500000, // 2.5m NGN
                 USD: 500,
                 USDT: 1000,
-                USDC: 1000
+                USDC: 1000,
+                ETH: 0.5, // 0.5 ETH (~$1150)
+                BNB: 3, // 3 BNB (~$930)
+                MATIC: 1000 // 1000 MATIC (~$850)
             });
         }
     }, []);
@@ -87,15 +121,32 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
         // Convert source to USD first (Base)
         let amountInUSD = amount;
-        if (sourceCurrency === "NGN") amountInUSD = amount / exchangeRate;
-        // USDT/USDC are pegged to USD for this simulation 1:1
+
+        switch (sourceCurrency) {
+            case "NGN": amountInUSD = amount * formattedRates.NGN_USD; break;
+            case "ETH": amountInUSD = amount * formattedRates.ETH_USD; break;
+            case "BNB": amountInUSD = amount * formattedRates.BNB_USD; break;
+            case "MATIC": amountInUSD = amount * formattedRates.MATIC_USD; break;
+            case "USDT":
+            case "USDC":
+            case "USD": amountInUSD = amount; break;
+        }
 
         // Convert USD to target
-        if (targetCurrency === "NGN") return amountInUSD * exchangeRate;
+        if (targetCurrency === "USD" || targetCurrency === "USDT" || targetCurrency === "USDC") return amountInUSD;
+        if (targetCurrency === "NGN") return amountInUSD / formattedRates.NGN_USD;
+        if (targetCurrency === "ETH") return amountInUSD / formattedRates.ETH_USD;
+        if (targetCurrency === "BNB") return amountInUSD / formattedRates.BNB_USD;
+        if (targetCurrency === "MATIC") return amountInUSD / formattedRates.MATIC_USD;
+
         return amountInUSD;
     };
 
     const formatPrice = (amount: number, currency: Currency): string => {
+        if (currency === "ETH" || currency === "BNB" || currency === "MATIC") {
+            return `${amount.toFixed(6)} ${currency}`;
+        }
+
         return new Intl.NumberFormat('en-NG', {
             style: 'currency',
             currency: currency === "USDT" || currency === "USDC" ? "USD" : currency, // Display stablecoins as USD symbol
@@ -108,7 +159,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         <WalletContext.Provider value={{
             isKycVerified,
             balances,
-            exchangeRate,
+            formattedRates,
+            exchangeRate: 1 / formattedRates.NGN_USD, // Backwards compatibility for NGN/USD
             verifyKyc,
             topUp,
             deduct,

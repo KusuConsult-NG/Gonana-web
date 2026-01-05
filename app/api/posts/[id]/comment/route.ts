@@ -1,12 +1,12 @@
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { adminDb } from "@/lib/firebase-admin";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -16,18 +16,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const { content } = await req.json();
         if (!content) return NextResponse.json({ error: "Content is required" }, { status: 400 });
 
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-        if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+        const commentData = {
+            content,
+            authorId: session.user.id,
+            createdAt: new Date().toISOString(),
+        };
 
-        const comment = await prisma.comment.create({
-            data: {
-                content,
-                postId: id,
-                authorId: user.id
-            }
-        });
+        const commentRef = await adminDb.collection('posts').doc(id).collection('comments').add(commentData);
 
-        return NextResponse.json(comment, { status: 201 });
+        return NextResponse.json({ id: commentRef.id, ...commentData }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: "Failed to comment" }, { status: 500 });
     }

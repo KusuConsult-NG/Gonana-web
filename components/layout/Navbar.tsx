@@ -47,7 +47,7 @@ export function Navbar() {
                         </Link>
 
                         <div className="hidden md:flex items-center gap-6">
-                            <Link href="/" className="text-sm font-medium text-text-light dark:text-text-dark hover:text-primary transition-colors">Marketplace</Link>
+                            <Link href="/marketplace" className="text-sm font-medium text-text-light dark:text-text-dark hover:text-primary transition-colors">Marketplace</Link>
                             <Link href="/sell" className="text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Sell</Link>
                             <Link href="/feed" className="text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Community</Link>
                             <Link href="/logistics" className="text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Logistics</Link>
@@ -139,7 +139,7 @@ export function Navbar() {
                     </div>
 
                     <div className="space-y-2">
-                        <Link href="/" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-lg text-base font-medium text-text-light dark:text-text-light hover:text-primary hover:bg-primary/5 transition-colors">
+                        <Link href="/marketplace" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-lg text-base font-medium text-text-light dark:text-text-light hover:text-primary hover:bg-primary/5 transition-colors">
                             Marketplace
                         </Link>
                         <Link href="/sell" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-lg text-base font-medium text-text-light dark:text-text-light hover:text-primary hover:bg-primary/5 transition-colors">

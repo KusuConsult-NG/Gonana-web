@@ -13,11 +13,12 @@ import { PriceTag } from "@/components/ui/PriceTag";
 import { initializePaystackPayment, convertToKobo } from "@/lib/paystack";
 
 export default function CheckoutPage() {
-    const { isKycVerified, balances, deduct, exchangeRate } = useWallet();
+    const { isKycVerified, balances, deduct, exchangeRate, formattedRates } = useWallet();
     const { data: session } = useSession();
     const router = useRouter();
     const [paymentMethod, setPaymentMethod] = useState<"fiat" | "crypto">("fiat");
-    const [selectedWalletCurrency, setSelectedWalletCurrency] = useState<"NGN" | "USDT" | "USDC">("NGN");
+    const [selectedWalletCurrency, setSelectedWalletCurrency] = useState<"NGN" | "USDT" | "USDC" | "ETH" | "BNB" | "MATIC">("USDT");
+    const [selectedNetwork, setSelectedNetwork] = useState<"ethereum" | "polygon" | "bsc">("polygon"); // Default to Polygon (cheapest)
     const [isProcessing, setIsProcessing] = useState(false);
     const [deliveryMethod, setDeliveryMethod] = useState<"logistics" | "pickup">("logistics"); // New state for delivery method
     const [shippingAddress, setShippingAddress] = useState("Farm #42, Agadez Region, Niger"); // Mock address for now
@@ -28,6 +29,19 @@ export default function CheckoutPage() {
     const shippingCost = deliveryMethod === "logistics" ? 2500 : 0; // Simplified logic mapping to API
     const tax = subtotal * 0.05;
     const total = subtotal + shippingCost + tax;
+
+    // Calculate total in different currencies
+    const totalInNGN = total;
+    const totalInUSD = total * formattedRates.NGN_USD;
+
+    const getCryptoAmount = (currency: string) => {
+        if (currency === 'NGN') return totalInNGN;
+        if (currency === 'USDT' || currency === 'USDC') return totalInUSD;
+        if (currency === 'ETH') return totalInUSD / formattedRates.ETH_USD;
+        if (currency === 'BNB') return totalInUSD / formattedRates.BNB_USD;
+        if (currency === 'MATIC') return totalInUSD / formattedRates.MATIC_USD;
+        return 0;
+    };
 
     const handlePay = async () => {
         if (!session) {
@@ -61,7 +75,6 @@ export default function CheckoutPage() {
                     },
                     async (response) => {
                         // Payment successful - verify and create order
-                        console.log("Payment successful:", response);
 
                         try {
                             // Create order with payment reference
@@ -96,17 +109,10 @@ export default function CheckoutPage() {
                     () => {
                         // User closed popup
                         setIsProcessing(false);
-                        console.log("Payment popup closed");
                     }
                 );
             } else {
                 // Crypto/Wallet Payment
-                if (selectedWalletCurrency !== "NGN") {
-                    alert("For this beta, please pay with NGN wallet balance.");
-                    setIsProcessing(false);
-                    return;
-                }
-
                 const res = await fetch("/api/orders", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -117,6 +123,7 @@ export default function CheckoutPage() {
                         totalAmount: total,
                         paymentMethod: "wallet",
                         walletCurrency: selectedWalletCurrency,
+                        network: selectedWalletCurrency !== "NGN" ? selectedNetwork : undefined,
                     }),
                 });
 
@@ -273,47 +280,128 @@ export default function CheckoutPage() {
                                         <span className="px-2 py-1 text-xs font-semibold bg-primary text-white rounded-full">Custodial</span>
                                     </div>
                                     <div className="space-y-4">
-                                        <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark">Select currency to pay with:</p>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {/* Wallets selection */}
-                                            {['NGN', 'USDT', 'USDC'].map((curr) => (
-                                                <label key={curr} className={cn(
-                                                    "relative flex cursor-pointer rounded-lg border bg-surface-light dark:bg-surface-dark p-4 shadow-sm hover:border-primary transition-all",
-                                                    selectedWalletCurrency === curr ? "border-primary ring-1 ring-primary" : "border-border-light dark:border-border-dark"
-                                                )}>
-                                                    <input
-                                                        type="radio"
-                                                        name="wallet-currency"
-                                                        value={curr}
-                                                        className="sr-only peer"
-                                                        checked={selectedWalletCurrency === curr}
-                                                        onChange={() => setSelectedWalletCurrency(curr as "NGN" | "USDT" | "USDC")}
-                                                    />
-                                                    <div className="flex flex-1 items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-xs">{curr}</div>
-                                                            <div>
-                                                                <span className="block text-sm font-medium text-text-light dark:text-text-dark">{curr} Balance</span>
+                                        <p className="text-sm font-medium text-text-light dark:text-text-dark mb-2">
+                                            Select currency to pay with:
+                                            <span className="ml-2 text-xs font-normal text-gray-500">
+                                                (Order Total: <span className="font-bold text-primary">₦{total.toLocaleString()}</span> / ${totalInUSD.toFixed(2)})
+                                            </span>
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {/* Wallets selection with all cryptos */}
+                                            {[
+                                                { symbol: 'NGN', name: 'Nigerian Naira', icon: '₦', balance: balances.NGN, color: 'bg-green-500' },
+                                                { symbol: 'USDT', name: 'Tether USD', icon: '₮', balance: balances.USDT, color: 'bg-teal-500' },
+                                                { symbol: 'USDC', name: 'USD Coin', icon: '$', balance: balances.USDC, color: 'bg-blue-500' },
+                                                { symbol: 'ETH', name: 'Ethereum', icon: 'Ξ', balance: balances.ETH || 0, color: 'bg-indigo-500' },
+                                                { symbol: 'BNB', name: 'BNB', icon: 'B', balance: balances.BNB || 0, color: 'bg-yellow-500' },
+                                                { symbol: 'MATIC', name: 'Polygon', icon: 'M', balance: balances.MATIC || 0, color: 'bg-purple-500' },
+                                            ].map((curr) => {
+                                                const paymentAmount = getCryptoAmount(curr.symbol);
+                                                const hasEnough = curr.balance >= paymentAmount;
+
+                                                return (
+                                                    <label key={curr.symbol} className={cn(
+                                                        "relative flex cursor-pointer rounded-lg border bg-surface-light dark:bg-surface-dark p-4 shadow-sm hover:border-primary transition-all",
+                                                        selectedWalletCurrency === curr.symbol ? "border-primary ring-2 ring-primary bg-primary/5" : "border-border-light dark:border-border-dark",
+                                                        !hasEnough && "opacity-60"
+                                                    )}>
+                                                        <input
+                                                            type="radio"
+                                                            name="wallet-currency"
+                                                            value={curr.symbol}
+                                                            className="sr-only peer"
+                                                            checked={selectedWalletCurrency === curr.symbol}
+                                                            onChange={() => setSelectedWalletCurrency(curr.symbol as any)}
+                                                            disabled={!hasEnough}
+                                                        />
+                                                        <div className="flex flex-1 items-center justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`h-10 w-10 ${curr.color} rounded-full flex items-center justify-center font-bold text-white shadow-md text-lg`}>
+                                                                    {curr.icon}
+                                                                </div>
+                                                                <div>
+                                                                    <span className="block text-sm font-bold text-text-light dark:text-text-dark">{curr.symbol}</span>
+                                                                    <span className="block text-xs text-gray-500">{curr.name}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <span className="text-xs text-gray-500">Balance:</span>
+                                                                <span className="text-sm font-bold text-text-light dark:text-text-dark">
+                                                                    {curr.symbol === 'NGN' ? `₦${curr.balance.toLocaleString()}` :
+                                                                        curr.symbol === 'ETH' || curr.symbol === 'BNB' || curr.symbol === 'MATIC' ?
+                                                                            `${curr.balance.toFixed(4)} ${curr.symbol}` :
+                                                                            `$${curr.balance.toLocaleString()}`}
+                                                                </span>
+                                                                <span className={cn(
+                                                                    "text-xs font-semibold",
+                                                                    hasEnough ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                                                                )}>
+                                                                    Pay: {curr.symbol === 'NGN' ? `₦${paymentAmount.toLocaleString()}` :
+                                                                        curr.symbol === 'ETH' || curr.symbol === 'BNB' || curr.symbol === 'MATIC' ?
+                                                                            `${paymentAmount.toFixed(6)} ${curr.symbol}` :
+                                                                            `$${paymentAmount.toFixed(2)}`}
+                                                                </span>
+                                                                {curr.symbol !== 'NGN' && (
+                                                                    <span className="text-[10px] text-gray-400">
+                                                                        ≈ ${curr.symbol === 'USDT' || curr.symbol === 'USDC' ? paymentAmount.toFixed(2) : (paymentAmount * (curr.symbol === 'ETH' ? formattedRates.ETH_USD : curr.symbol === 'BNB' ? formattedRates.BNB_USD : formattedRates.MATIC_USD)).toFixed(2)}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                        <div className="flex flex-col items-end">
-                                                            <span className="text-sm font-bold text-primary">
-                                                                {/* Display Balance */}
-                                                                {curr === 'NGN' ? `₦${balances.NGN.toLocaleString()} ` :
-                                                                    curr === 'USDT' ? `$${balances.USDT.toLocaleString()} ` :
-                                                                        `$${balances.USDC.toLocaleString()} `}
-                                                            </span>
-                                                            {/* Show conversion if paying in NGN for USD item */}
-                                                            {curr === 'NGN' && (
-                                                                <span className="text-[10px] text-gray-500">
-                                                                    Exch: ₦{exchangeRate}/$
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </label>
-                                            ))}
+                                                        {!hasEnough && (
+                                                            <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">
+                                                                Insufficient
+                                                            </div>
+                                                        )}
+                                                    </label>
+                                                );
+                                            })}
                                         </div>
+
+                                        {/* Network Selection for All Crypto */}
+                                        {selectedWalletCurrency !== 'NGN' && (
+                                            <div className="space-y-3 mt-4 pt-4 border-t border-border-light dark:border-border-dark">
+                                                <p className="text-sm font-medium text-text-light dark:text-text-dark">Select Network:</p>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    {[
+                                                        { id: 'polygon', name: 'Polygon', symbol: 'MATIC', fee: '$0.01', color: 'bg-purple-500', recommended: true },
+                                                        { id: 'bsc', name: 'BNB Chain', symbol: 'BNB', fee: '$0.10', color: 'bg-yellow-500' },
+                                                        { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', fee: '$5', color: 'bg-blue-500' },
+                                                    ].map((network) => (
+                                                        <label key={network.id} className={cn(
+                                                            "relative flex flex-col cursor-pointer rounded-lg border p-3 shadow-sm hover:border-primary transition-all",
+                                                            selectedNetwork === network.id ? "border-primary ring-2 ring-primary bg-primary/5" : "border-border-light dark:border-border-dark"
+                                                        )}>
+                                                            <input
+                                                                type="radio"
+                                                                name="network"
+                                                                value={network.id}
+                                                                className="sr-only"
+                                                                checked={selectedNetwork === network.id}
+                                                                onChange={() => setSelectedNetwork(network.id as "ethereum" | "polygon" | "bsc")}
+                                                            />
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <div className={`w-10 h-10 ${network.color} rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md`}>
+                                                                    {network.symbol[0]}
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <div className="text-xs font-semibold text-text-light dark:text-text-dark">{network.name}</div>
+                                                                    <div className="text-[10px] text-gray-500">Fee: {network.fee}</div>
+                                                                    {network.recommended && (
+                                                                        <div className="text-[9px] text-green-600 dark:text-green-400 font-bold mt-0.5">Recommended</div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-2">
+                                                    <p className="text-[11px] text-yellow-800 dark:text-yellow-200">
+                                                        ⚠️ Make sure your {selectedWalletCurrency} is on the <strong>{selectedNetwork === 'ethereum' ? 'Ethereum' : selectedNetwork === 'polygon' ? 'Polygon' : 'BNB Chain'}</strong> network
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="mt-4 flex justify-between items-center text-sm p-3 bg-surface-light dark:bg-surface-dark rounded border border-border-light dark:border-border-dark">
                                         <span className="text-secondary-text-light dark:text-secondary-text-dark">Zero Transaction Fees within Gonana.</span>

@@ -1,7 +1,7 @@
 // Paystack Integration Utility
 // Uses Paystack Popup JS (loaded via script tag in layout)
 
-export const PAYSTACK_PUBLIC_KEY = "pk_test_3e87802dae281fbeb004f2b0f741a6e662aba103";
+export const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "";
 
 export interface PaystackPaymentData {
     email: string;

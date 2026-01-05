@@ -1,0 +1,86 @@
+# =============================================================================
+# COPY THESE EXACTLY TO VERCEL ENVIRONMENT VARIABLES
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. FIREBASE SERVER-SIDE (Secret - Keep Private)
+# -----------------------------------------------------------------------------
+
+FIREBASE_PROJECT_ID=gonana-web
+
+FIREBASE_PRIVATE_KEY_ID=e9eb8349ab36483e19e77bd170422a518132635d
+
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@gonana-web.iam.gserviceaccount.com
+
+FIREBASE_CLIENT_ID=104010792556787523186
+
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCg2tVX48s+O+qV
+B5XsMGylAk2BMTVUHjruPVy4pxjvI+HRj/BRjTRBdXDj2ajaPpl43EFDBtx+0/0m
+7X8AiR0IZnS6EE9Z5Ix5Iq8Y/mTUh83HkajbPdxA6lvPVlyCVHW93kh9Dhuz1ajZ
+iEQMLdXeOVkvHAi6zbFJau4HhRVMyfflIvVbzlGXU5/6JB4H9uWCP7P7y6+MdaQy
+3dFxPaAC5W/MYjZIkQjmPfmuJOrDihjHzGkeUUQ7EjIvQegq98eW00iwmu/sqdAI
++jvPyeXQAbW3DpSbPxJbRsWrixkgiXZD5XG9Qy/K8ixrvoFXlwLhxNDD+7n3aYIT
+MI9rgFQfAgMBAAECggEAIrRD/jPf6DvuFxwtXOlvr0Qpa5utyUnCZh8oD5DBoOqp
+cFixPS8NXKgVZJtTwk5qNzix/d+Pl+9tuUXZNkje0i6ktXYKYLceFY6Fn4tXPsFU
+BOAowbB9giXuC/Qyfk3xnzbDhfOSx4Br7w7mu4fyEgFme/L88SyquM/Qrh+o4kmD
+KAAX+HkSqUjnJ5baKpHkiZlx3yJ8jgLvj1eOVkT2KGHChVIKFgOGU5nfcxzGEaei
+lN3tCs2CjCHaTMHWmQCbzP6S45XC4OTqid/mbwU3Zqgvd4w+DkGJVnRDYRoUYvyj
+yuYRfMfyecH4lW09N4P/Z9qZpkpuI/LLjQ+VXhoYMQKBgQDY5JErV1an6GICXoQ0
+N2UjL70cwVnVI41mlq+2vWU74xcnXxt0QiH6+a8F8YbqgxzS/ExlyjZBsjKBJopE
+a/p0b/o4WdSRJMyTZ9mYVE5cZYezrhdY04/MmsQApqPRPa0U7bfDA9XFZG27L4wZ
+fn4Xp91y2KwUjcdTV/zIlA0PTwKBgQC926Oh52haNCJkd7sTYsu69m+W+S/NM7bG
+klsaEB0TLaF0uFSzYIF2GYdD9jAieyXQ1agwuTRgznH70Oe9L9hibkaOyuid+Xeo
+gS6Js6tvkFefrHiTcimeDT+TJDeh4u7MHKthdB8YslDx1Hc6+n0bIrFSjQ//iLQS
+Errcmc+6MQKBgH6vwzuVoEAjNFw96Oq3EJQk5klNhrNAOO+bRLdwmRkJ5BRTMS4P
+EtoNzXWjRjLksolqZRVvr5FgDK/zWv/sMjag0X7ouYit/fB70FVxqPO/Oixxm6F+
+sZfJLoNS0oz9gYOf9p4qN0s9Bfs4IpUhlXUrz+WtOZYn2i2MT1K5Z4dxAoGBAKQV
+bxY+KLHM3Ox3jfbzK6Ap28dfFTEDwLNdSd78jiRFC4UUyh89CKZI6d6SpocmZ0hV
+X0a8ycfgpCI+KgoXj6uCIvjF5MSjFgdLnizkWwXQeepF5O+Jeu5eBNPmOS5wMnG1
+VWikMzvk4JAgT+tpETaihR4TTABM5VO5XEXLqPwBAoGAXsclei1Xd3dqa9ZrP/1O
+mo7rl+0FmShmkho/ACNXXAQhkV07pMnY4sYuA0bZlaT183igd4MfiLdl1bGGO9As
+4wna8tOwnj0IT8HSMl7KdhhWCbXxRsfbKIUt7x3QSNhNkJr/LzMZumkJqvqLrXjk
+yoRf8zXI1Iaf0rfmiPXilXo=
+-----END PRIVATE KEY-----"
+
+# -----------------------------------------------------------------------------
+# 2. FIREBASE CLIENT-SIDE (Public - Get from Firebase Console)
+# -----------------------------------------------------------------------------
+# Go to: https://console.firebase.google.com/project/gonana-web/settings/general
+# Scroll down to "Your apps" and copy the config values
+
+NEXT_PUBLIC_FIREBASE_API_KEY=GET_FROM_FIREBASE_CONSOLE
+
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=gonana-web.firebaseapp.com
+
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=gonana-web
+
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=gonana-web.firebasestorage.app
+
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=GET_FROM_FIREBASE_CONSOLE
+
+NEXT_PUBLIC_FIREBASE_APP_ID=GET_FROM_FIREBASE_CONSOLE
+
+# -----------------------------------------------------------------------------
+# 3. NEXTAUTH
+# -----------------------------------------------------------------------------
+
+NEXTAUTH_SECRET=9T08hgPYKDJzo44JXAzOTdZill7l8hg+Z4DA6XSoUcU=
+
+NEXTAUTH_URL=https://YOUR-VERCEL-DOMAIN.vercel.app
+
+# -----------------------------------------------------------------------------
+# 4. DATABASE (Optional - if using external database)
+# -----------------------------------------------------------------------------
+
+# DATABASE_URL=your-database-connection-string-here
+
+# -----------------------------------------------------------------------------
+# 5. GOOGLE OAUTH (For Google Sign-In)
+# -----------------------------------------------------------------------------
+# Get these from: https://console.cloud.google.com/apis/credentials
+
+GOOGLE_CLIENT_ID=GET_FROM_GOOGLE_CLOUD_CONSOLE
+
+GOOGLE_CLIENT_SECRET=GET_FROM_GOOGLE_CLOUD_CONSOLE
+

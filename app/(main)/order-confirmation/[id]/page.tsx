@@ -1,20 +1,24 @@
 
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { adminDb } from "@/lib/firebase-admin";
 import Link from "next/link";
 import { CheckCircle, Package, Home } from "lucide-react";
 
 async function getOrder(id: string) {
-    const order = await prisma.order.findUnique({
-        where: { id },
-        include: { items: { include: { product: true } } }
-    });
-    return order;
+    try {
+        const orderDoc = await adminDb.collection('orders').doc(id).get();
+        if (!orderDoc.exists) {
+            return null;
+        }
+        return { id: orderDoc.id, ...orderDoc.data() };
+    } catch (error) {
+        return null;
+    }
 }
 
 export default async function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const order = await getOrder(id);
+    const order = await getOrder(id) as any;
 
     if (!order) {
         return notFound();
@@ -35,10 +39,10 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-8 text-left">
                     <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Order Summary</h3>
                     <div className="space-y-3">
-                        {order.items.map((item) => (
-                            <div key={item.id} className="flex justify-between items-start text-sm">
+                        {order.items?.map((item: any, index: number) => (
+                            <div key={index} className="flex justify-between items-start text-sm">
                                 <span className="text-gray-800 dark:text-gray-200">
-                                    {item.product.name} <span className="text-gray-400">x{item.quantity}</span>
+                                    {item.productName} <span className="text-gray-400">x{item.quantity}</span>
                                 </span>
                                 <span className="font-medium text-gray-900 dark:text-white">₦{item.price * item.quantity}</span>
                             </div>

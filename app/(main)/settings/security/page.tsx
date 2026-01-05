@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Shield, Smartphone, Key, Lock, LogOut, CheckCircle } from "lucide-react";
@@ -8,27 +9,66 @@ import { Shield, Smartphone, Key, Lock, LogOut, CheckCircle } from "lucide-react
 export default function SecurityPage() {
     const [is2faEnabled, setIs2faEnabled] = useState(false);
     const [show2faSetup, setShow2faSetup] = useState(false);
+    const [qrCodeData, setQrCodeData] = useState('');
+    const [setupCode, setSetupCode] = useState('');
+    const [isSettingUp, setIsSettingUp] = useState(false);
+    const [backupCodes, setBackupCodes] = useState<string[]>([]);
     const [auditLog] = useState([
         { id: 1, action: "Login", device: "Chrome / macOS", location: "Lagos, NG", time: "Just now", status: "success" },
         { id: 2, action: "Password Change", device: "Safari / iPhone", location: "Abuja, NG", time: "2 days ago", status: "success" },
         { id: 3, action: "Failed Login", device: "Firefox / Windows", location: "London, UK", time: "5 days ago", status: "failed" },
     ]);
 
-    const handleToggle2fa = () => {
+    // Fetch initial status
+    useEffect(() => {
+        fetch('/api/auth/2fa/status')
+            .then(res => res.json())
+            .then(data => setIs2faEnabled(data.enabled))
+            .catch(console.error);
+    }, []);
+
+    const handleToggle2fa = async () => {
         if (is2faEnabled) {
-            if (confirm("Are you sure you want to disable 2FA? Your account will be less secure.")) {
-                setIs2faEnabled(false);
+            if (confirm("Are you sure you want to disable 2FA? This will decrease your account security.")) {
+                // TODO: Implement disable API
+                alert("Please contact support to disable 2FA.");
             }
         } else {
-            setShow2faSetup(true);
+            setIsSettingUp(true);
+            try {
+                const res = await fetch('/api/auth/2fa/setup', { method: 'POST' });
+                const data = await res.json();
+                if (data.qrCode) {
+                    setQrCodeData(data.qrCode);
+                    setShow2faSetup(true);
+                }
+            } catch (error) {
+                console.error("Setup failed", error);
+                alert("Failed to initiate 2FA setup");
+            } finally {
+                setIsSettingUp(false);
+            }
         }
     };
 
-    const confirm2faSetup = () => {
-        // Simulate setup verification
-        setIs2faEnabled(true);
-        setShow2faSetup(false);
-        alert("Two-Factor Authentication has been enabled successfully.");
+    const confirm2faSetup = async () => {
+        try {
+            const res = await fetch('/api/auth/2fa/verify', {
+                method: 'POST',
+                body: JSON.stringify({ code: setupCode })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setIs2faEnabled(true);
+                setShow2faSetup(false);
+                setBackupCodes(data.backupCodes);
+            } else {
+                alert(data.error || "Verification failed. Please try again.");
+            }
+        } catch (error) {
+            alert("Verification error.");
+        }
     };
 
     return (
@@ -37,6 +77,26 @@ export default function SecurityPage() {
                 <h1 className="text-3xl font-display font-bold text-text-light dark:text-text-dark">Security Settings</h1>
                 <p className="text-secondary-text-light dark:text-secondary-text-dark">Manage your account security and authentication methods.</p>
             </div>
+
+            {backupCodes.length > 0 && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-6 rounded-xl animate-in fade-in slide-in-from-top-4">
+                    <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-400 mb-2">💾 Save Your Backup Codes!</h3>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
+                        These codes are the ONLY way to access your account if you lose your authenticator device.
+                        <strong>Save them in a secure place.</strong>
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        {backupCodes.map((code, i) => (
+                            <div key={i} className="bg-white dark:bg-black/20 p-2 rounded text-center font-mono text-sm border border-yellow-100 dark:border-yellow-900/50 select-all">
+                                {code}
+                            </div>
+                        ))}
+                    </div>
+                    <Button onClick={() => setBackupCodes([])} className="mt-4" variant="outline">
+                        I have saved these codes
+                    </Button>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* 2FA Section */}
@@ -72,6 +132,7 @@ export default function SecurityPage() {
                                     className="sr-only peer"
                                     checked={is2faEnabled}
                                     onChange={handleToggle2fa}
+                                    disabled={isSettingUp}
                                 />
                                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                             </label>
@@ -81,10 +142,16 @@ export default function SecurityPage() {
                             <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 text-sm mb-4">
                                 <p className="font-bold text-blue-800 dark:text-blue-300 mb-2">Scan QR Code</p>
                                 <p className="text-blue-600 dark:text-blue-400 mb-3">Open your authenticator app (Google Authenticator, Authy) and scan this code.</p>
-                                <div className="bg-white p-2 w-32 h-32 mx-auto border rounded mb-3 flex items-center justify-center text-xs text-gray-400">
-                                    [QR Code Mock]
+                                <div className="bg-white p-2 w-36 h-36 mx-auto border rounded mb-3 flex items-center justify-center relative">
+                                    {qrCodeData ? (
+                                        <Image src={qrCodeData} alt="2FA QR Code" width={128} height={128} />
+                                    ) : (
+                                        <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                    )}
                                 </div>
                                 <Input
+                                    value={setupCode}
+                                    onChange={(e) => setSetupCode(e.target.value)}
                                     placeholder="Enter 6-digit code"
                                     className="text-center tracking-widest font-mono text-lg"
                                     maxLength={6}
@@ -92,7 +159,7 @@ export default function SecurityPage() {
                             </div>
                             <div className="flex gap-3">
                                 <Button variant="outline" onClick={() => setShow2faSetup(false)} className="flex-1">Cancel</Button>
-                                <Button onClick={confirm2faSetup} className="flex-1">Verify & Enable</Button>
+                                <Button onClick={confirm2faSetup} className="flex-1" disabled={setupCode.length !== 6}>Verify & Enable</Button>
                             </div>
                         </div>
                     )}
@@ -150,8 +217,8 @@ export default function SecurityPage() {
                                     <td className="px-4 py-3 text-secondary-text-light dark:text-secondary-text-dark">{log.time}</td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-1 text-xs rounded-full ${log.status === 'success'
-                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                             }`}>
                                             {log.status === 'success' ? 'Successful' : 'Failed'}
                                         </span>

@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+import { adminDb, verifyIdToken } from "@/lib/firebase-admin";
 
 export async function PUT(req: Request) {
-    // TODO: Add Firebase auth check
-    // For now, allow updates without auth
-
     try {
-        const body = await req.json();
-        const { userId, name } = body;
-
-        if (!userId) {
-            return NextResponse.json({ error: "User ID required" }, { status: 400 });
+        // Verify Firebase authentication
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
         }
+
+        const token = authHeader.split("Bearer ")[1];
+        let decodedToken;
+        try {
+            decodedToken = await verifyIdToken(token);
+        } catch (error) {
+            return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
+        }
+
+        const body = await req.json();
+        const { name } = body;
+
+        // Use authenticated user ID
+        const userId = decodedToken.uid;
 
         // Update user document in Firestore
         await adminDb.collection('users').doc(userId).update({
@@ -27,7 +37,6 @@ export async function PUT(req: Request) {
             ...userDoc.data()
         });
     } catch (error) {
-        console.error("User update error:", error);
         return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
     }
 }

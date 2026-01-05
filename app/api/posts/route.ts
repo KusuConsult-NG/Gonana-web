@@ -1,38 +1,36 @@
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { adminDb } from "@/lib/firebase-admin";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 
 export async function GET(req: Request) {
     try {
-        const posts = await prisma.post.findMany({
-            include: {
-                author: {
-                    select: {
-                        name: true,
-                        image: true,
-                    }
-                },
-                likes: true,
-                comments: true,
-            },
-            orderBy: {
-                createdAt: "desc"
-            }
-        });
+        const postsSnapshot = await adminDb.collection('posts').orderBy('createdAt', 'desc').get();
 
-        const formattedPosts = posts.map(post => ({
-            id: post.id,
-            author: post.author.name || "Anonymous",
-            handle: "@" + (post.author.name?.replace(/\s+/g, "").toLowerCase() || "user"),
-            time: new Date(post.createdAt).toLocaleDateString(), // simplified time
-            content: post.content,
-            image: post.image,
-            likes: post.likes.length,
-            comments: post.comments.length,
-            avatar: post.author.image || "", // Use real avatar or empty string (frontend handles fallback)
-            isLiked: false, // In a real app, check if session user liked it
+        const formattedPosts = await Promise.all(postsSnapshot.docs.map(async (doc) => {
+            const post = doc.data();
+
+            // Get author details
+            const authorDoc = await adminDb.collection('users').doc(post.authorId).get();
+            const author = authorDoc.data();
+
+            // Get likes and comments count
+            const likesSnapshot = await adminDb.collection('posts').doc(doc.id).collection('likes').get();
+            const commentsSnapshot = await adminDb.collection('posts').doc(doc.id).collection('comments').get();
+
+            return {
+                id: doc.id,
+                author: author?.name || "Anonymous",
+                handle: "@" + (author?.name?.replace(/\s+/g, "").toLowerCase() || "user"),
+                time: new Date(post.createdAt).toLocaleDateString(),
+                content: post.content,
+                image: post.image || null,
+                likes: likesSnapshot.size,
+                comments: commentsSnapshot.size,
+                avatar: author?.image || "",
+                isLiked: false,
+            };
         }));
 
         return NextResponse.json(formattedPosts);
@@ -44,7 +42,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -55,18 +53,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Content is required" }, { status: 400 });
         }
 
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-        if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+        const postData = {
+            content,
+            image: image || null,
+            authorId: session.user.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
 
-        const post = await prisma.post.create({
-            data: {
-                content,
-                image,
-                authorId: user.id
-            }
-        });
+        const postRef = await adminDb.collection('posts').add(postData);
 
-        return NextResponse.json(post, { status: 201 });
+        return NextResponse.json({ id: postRef.id, ...postData }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
     }
