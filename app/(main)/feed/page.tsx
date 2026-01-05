@@ -35,6 +35,8 @@ export default function CommunityPage() {
     const [commentContent, setCommentContent] = useState("");
     const [trendingTopics, setTrendingTopics] = useState<{ tag: string, count: number }[]>([]);
     const [userBio, setUserBio] = useState("");
+    const [isPostingComment, setIsPostingComment] = useState(false);
+    const [postComments, setPostComments] = useState<Record<string, any[]>>({});
 
     useEffect(() => {
         fetchPosts();
@@ -168,6 +170,56 @@ export default function CommunityPage() {
         } catch (error) {
             console.error("Error liking post:", error);
             // Revert on error would go here
+        }
+    };
+
+    const handlePostComment = async () => {
+        if (!session || !commentingOnPost || !commentContent.trim()) return;
+
+        setIsPostingComment(true);
+        try {
+            const res = await fetch(`/api/posts/${commentingOnPost}/comment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: commentContent })
+            });
+
+            if (res.ok) {
+                // Refresh comments for this post
+                await fetchCommentsForPost(commentingOnPost);
+                setCommentContent('');
+                toast.success('Comment posted!');
+
+                // Update comment count in posts
+                setPosts(prev => prev.map(p =>
+                    p.id === commentingOnPost ? { ...p, comments: p.comments + 1 } : p
+                ));
+            } else {
+                toast.error('Failed to post comment');
+            }
+        } catch (error) {
+            toast.error('Error posting comment');
+        } finally {
+            setIsPostingComment(false);
+        }
+    };
+
+    const fetchCommentsForPost = async (postId: string) => {
+        try {
+            const res = await fetch(`/api/posts/${postId}/comment`);
+            if (res.ok) {
+                const data = await res.json();
+                setPostComments(prev => ({ ...prev, [postId]: data }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch comments:', error);
+        }
+    };
+
+    const openCommentModal = async (postId: string) => {
+        setCommentingOnPost(postId);
+        if (!postComments[postId]) {
+            await fetchCommentsForPost(postId);
         }
     };
 
@@ -336,7 +388,7 @@ export default function CommunityPage() {
                                             <Heart className={cn("h-5 w-5", post.isLiked && "fill-current")} />
                                             <span className="text-sm font-medium">{post.likes}</span>
                                         </button>
-                                        <button onClick={() => setCommentingOnPost(post.id)} className="flex items-center gap-2 text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">
+                                        <button onClick={() => openCommentModal(post.id)} className="flex items-center gap-2 text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">
                                             <MessageCircle className="h-5 w-5" />
                                             <span className="text-sm font-medium">{post.comments}</span>
                                         </button>
@@ -374,6 +426,61 @@ export default function CommunityPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Comment Modal */}
+            {commentingOnPost && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setCommentingOnPost(null)}>
+                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-text-light dark:text-text-dark">Comments</h3>
+                            <button onClick={() => setCommentingOnPost(null)} className="text-gray-400 hover:text-gray-600">
+                                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto max-h-96 p-4">
+                            {postComments[commentingOnPost]?.length > 0 ? (
+                                <div className="space-y-4">
+                                    {postComments[commentingOnPost].map((comment: any) => (
+                                        <div key={comment.id} className="flex gap-3">
+                                            <div className="h-8 w-8 rounded-full bg-gray-200 flex-shrink-0"></div>
+                                            <div>
+                                                <p className="text-sm font-medium text-text-light dark:text-text-dark">{comment.author || 'Anonymous'}</p>
+                                                <p className="text-sm text-secondary-text-light dark:text-secondary-text-dark mt-1">{comment.content}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-center text-gray-500">No comments yet. Be the first!</p>
+                            )}
+                        </div>
+
+                        {session && (
+                            <div className="p-4 border-t border-border-light dark:border-border-dark">
+                                <textarea
+                                    value={commentContent}
+                                    onChange={(e) => setCommentContent(e.target.value)}
+                                    placeholder="Write a comment..."
+                                    rows={3}
+                                    className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg p-3 text-text-light dark:text-text-dark resize-none"
+                                />
+                                <div className="flex justify-end mt-2">
+                                    <button
+                                        onClick={handlePostComment}
+                                        disabled={!commentContent.trim() || isPostingComment}
+                                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors"
+                                    >
+                                        {isPostingComment ? 'Posting...' : 'Post Comment'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

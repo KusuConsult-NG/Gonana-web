@@ -5,6 +5,60 @@ import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import bcrypt from "bcryptjs";
 
 /**
+ * Validate password strength with comprehensive checks
+ */
+function validatePasswordStrength(password: string): string[] {
+    const errors: string[] = [];
+
+    // Length check
+    if (password.length < 8) {
+        errors.push("Password must be at least 8 characters long");
+    }
+
+    if (password.length > 128) {
+        errors.push("Password must not exceed 128 characters");
+    }
+
+    // Uppercase letter check
+    if (!/[A-Z]/.test(password)) {
+        errors.push("Password must contain at least one uppercase letter");
+    }
+
+    // Lowercase letter check
+    if (!/[a-z]/.test(password)) {
+        errors.push("Password must contain at least one lowercase letter");
+    }
+
+    // Number check
+    if (!/[0-9]/.test(password)) {
+        errors.push("Password must contain at least one number");
+    }
+
+    // Special character check
+    if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'/`~]/.test(password)) {
+        errors.push("Password must contain at least one special character (!@#$%^&*...)");
+    }
+
+    // Check for common weak patterns
+    const weakPatterns = [
+        /^123456/,
+        /password/i,
+        /qwerty/i,
+        /abc123/i,
+        /(.)\1{2,}/ // repeated characters (aaa, 111, etc)
+    ];
+
+    for (const pattern of weakPatterns) {
+        if (pattern.test(password)) {
+            errors.push("Password contains weak or common patterns");
+            break;
+        }
+    }
+
+    return errors;
+}
+
+/**
  * POST /api/auth/change-password
  * Change user password
  */
@@ -27,10 +81,11 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Validate new password strength
-        if (newPassword.length < 8) {
+        // Comprehensive password validation
+        const passwordErrors = validatePasswordStrength(newPassword);
+        if (passwordErrors.length > 0) {
             return NextResponse.json(
-                { error: "New password must be at least 8 characters" },
+                { error: passwordErrors.join('. ') },
                 { status: 400 }
             );
         }
