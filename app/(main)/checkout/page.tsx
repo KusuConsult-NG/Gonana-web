@@ -17,6 +17,18 @@ export default function CheckoutPage() {
     const { data: session } = useSession();
     const router = useRouter();
     const [selectedShipping, setSelectedShipping] = useState<"gig" | "topship" | "direct">("gig");
+    const [paymentMethod, setPaymentMethod] = useState<"fiat" | "crypto">("fiat");
+    const [selectedWalletCurrency, setSelectedWalletCurrency] = useState<"NGN" | "USDT" | "USDC" | "ETH" | "BNB" | "MATIC">("USDT");
+    const [selectedNetwork, setSelectedNetwork] = useState<"ethereum" | "polygon" | "bsc">("polygon");
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [shippingData, setShippingData] = useState({
+        fullName: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        postalCode: ""
+    });
 
     const { items, subtotal, clearCart, removeItem } = useCart();
 
