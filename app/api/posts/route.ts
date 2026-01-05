@@ -15,28 +15,35 @@ export async function GET(req: Request) {
             const authorDoc = await adminDb.collection('users').doc(post.authorId).get();
             const author = authorDoc.data();
 
+            let authorName = author?.name;
+            if (!authorName && author?.firstName) {
+                authorName = `${author.firstName} ${author.lastName || ''}`.trim();
+            }
+
+            const displayAuthor = authorName || "Anonymous";
+
             // Get likes and comments count
             const likesSnapshot = await adminDb.collection('posts').doc(doc.id).collection('likes').get();
             const commentsSnapshot = await adminDb.collection('posts').doc(doc.id).collection('comments').get();
 
             return {
                 id: doc.id,
-                author: author?.name || "Anonymous",
-                handle: "@" + (author?.name?.replace(/\s+/g, "").toLowerCase() || "user"),
-                time: new Date(post.createdAt).toLocaleDateString(),
+                author: displayAuthor,
+                handle: "@" + (displayAuthor.replace /\s+/g, "").toLowerCase() || "user"),
+            time: new Date(post.createdAt).toLocaleDateString(),
                 content: post.content,
-                image: post.image || null,
-                likes: likesSnapshot.size,
-                comments: commentsSnapshot.size,
-                avatar: author?.image || "",
-                isLiked: false,
+                    image: post.image || null,
+                        likes: likesSnapshot.size,
+                            comments: commentsSnapshot.size,
+                                avatar: author?.image || "",
+                                    isLiked: false,
             };
-        }));
+}));
 
-        return NextResponse.json(formattedPosts);
+return NextResponse.json(formattedPosts);
     } catch (error) {
-        return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
-    }
+    return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
+}
 }
 
 export async function POST(req: Request) {
