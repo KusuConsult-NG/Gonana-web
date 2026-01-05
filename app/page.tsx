@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { ArrowRight, Users, Shield, TrendingUp, Leaf, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
-import { Navbar } from "@/components/layout/Navbar";
 
 export default function LandingPage() {
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden font-sans selection:bg-primary/20">
             {/* Background Gradients */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] mix-blend-multiply dark:bg-primary/10"></div>
@@ -15,8 +14,26 @@ export default function LandingPage() {
             </div>
 
             <div className="relative z-10">
+                {/* Landing Page Header */}
+                <header className="absolute top-0 w-full z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Image src="/logo.png" alt="Gonana" width={32} height={32} className="w-8 h-8" />
+                            <span className="font-bold text-xl text-gray-900 dark:text-white">Gonana</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Link href="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
+                                Sign In
+                            </Link>
+                            <Link href="/signup" className="hidden sm:flex text-sm font-bold bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 rounded-full hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                                Get Started
+                            </Link>
+                        </div>
+                    </div>
+                </header>
+
                 {/* Hero Section */}
-                <div className="relative pt-20 pb-32 lg:pt-32 lg:pb-48">
+                <div className="relative pt-32 pb-32 lg:pt-48 lg:pb-48">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-700 mb-8 animate-fade-in-up">
                             <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2"></span>
