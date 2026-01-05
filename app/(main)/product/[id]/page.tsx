@@ -43,6 +43,7 @@ export default function ProductPage() {
     useEffect(() => {
         if (params.id) {
             fetchProduct(params.id as string);
+            fetchRelatedProducts(); // Call fetchRelatedProducts here
         }
     }, [params.id]);
 
@@ -51,14 +52,13 @@ export default function ProductPage() {
             const res = await fetch(`/api/products/${id}`);
             if (res.ok) {
                 const data = await res.json();
-                // Parse images if string
-                const images = data.images ? JSON.parse(data.images) : [];
-                setProduct({ ...data, images });
+                // Firestore returns images as array already
+                setProduct({ ...data, images: data.images || [] });
             } else {
-                // Handle error or redirect
+                setError("Product not found");
             }
-        } catch (error) {
-            console.error("Error fetching product:", error);
+        } catch (err) {
+            setError("Failed to load product");
         } finally {
             setLoading(false);
         }
@@ -66,8 +66,7 @@ export default function ProductPage() {
 
     const fetchRelatedProducts = async () => {
         try {
-            // This is a placeholder. In a real app, you'd fetch related products based on category, tags, etc.
-            const res = await fetch('/api/products'); // Fetch all products for now
+            const res = await fetch('/api/products');
             if (res.ok) {
                 const data = await res.json();
                 // Filter out the current product and take a few random ones
@@ -77,8 +76,8 @@ export default function ProductPage() {
                     image: (p.images && p.images[0]) ? p.images[0] : "https://via.placeholder.com/400"
                 })));
             }
-        } catch (error) {
-            console.error("Error fetching related products:", error);
+        } catch (err) {
+            console.error("Failed to load related products", err);
         }
     };
 
