@@ -16,23 +16,12 @@ export default function CheckoutPage() {
     const { isKycVerified, balances, deduct, exchangeRate, formattedRates } = useWallet();
     const { data: session } = useSession();
     const router = useRouter();
-    const [paymentMethod, setPaymentMethod] = useState<"fiat" | "crypto">("fiat");
-    const [selectedWalletCurrency, setSelectedWalletCurrency] = useState<"NGN" | "USDT" | "USDC" | "ETH" | "BNB" | "MATIC">("USDT");
-    const [selectedNetwork, setSelectedNetwork] = useState<"ethereum" | "polygon" | "bsc">("polygon"); // Default to Polygon (cheapest)
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [shippingData, setShippingData] = useState({
-        fullName: "",
-        phone: "",
-        address: "",
-        city: "",
-        state: "",
-        postalCode: ""
-    });
+    const [selectedShipping, setSelectedShipping] = useState<"gig" | "topship" | "direct">("gig");
 
-    const { items, subtotal, clearCart } = useCart();
+    const { items, subtotal, clearCart, removeItem } = useCart();
 
     // Derived state
-    const shippingCost = 2500; // Simplified logic mapping to API
+    const shippingCost = selectedShipping === "gig" ? 2500 : selectedShipping === "topship" ? 4500 : 0;
     const tax = subtotal * 0.05;
     const total = subtotal + shippingCost + tax;
 
@@ -82,7 +71,7 @@ export default function CheckoutPage() {
                                 price: item.price
                             })),
                             shipping_address: `${shippingData.address}, ${shippingData.city}, ${shippingData.state}${shippingData.postalCode ? ', ' + shippingData.postalCode : ''}`,
-                            delivery_method: "logistics",
+                            delivery_method: selectedShipping,
                         },
                     },
                     async (response) => {
@@ -96,7 +85,7 @@ export default function CheckoutPage() {
                                 body: JSON.stringify({
                                     items,
                                     address: `${shippingData.address}, ${shippingData.city}, ${shippingData.state}${shippingData.postalCode ? ', ' + shippingData.postalCode : ''}`,
-                                    logistics: "logistics",
+                                    logistics: selectedShipping,
                                     totalAmount: total,
                                     paymentReference: response.reference,
                                     paymentMethod: "paystack",
@@ -131,7 +120,7 @@ export default function CheckoutPage() {
                     body: JSON.stringify({
                         items,
                         address: `${shippingData.address}, ${shippingData.city}, ${shippingData.state}${shippingData.postalCode ? ', ' + shippingData.postalCode : ''}`,
-                        logistics: "logistics",
+                        logistics: selectedShipping,
                         totalAmount: total,
                         paymentMethod: "wallet",
                         walletCurrency: selectedWalletCurrency,
@@ -205,9 +194,19 @@ export default function CheckoutPage() {
                         <div className="p-6">
                             <h3 className="text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wide mb-4">Delivery Service</h3>
                             <div className="space-y-3">
-                                <label className="flex items-center justify-between p-4 rounded-lg border border-primary bg-primary/5 cursor-pointer">
+                                <label className={cn(
+                                    "flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors",
+                                    selectedShipping === "gig" ? "border-primary bg-primary/5" : "border-border-light dark:border-border-dark hover:border-primary"
+                                )}>
                                     <div className="flex items-center gap-3">
-                                        <input type="radio" name="shipping" defaultChecked className="h-4 w-4 text-primary focus:ring-primary" />
+                                        <input
+                                            type="radio"
+                                            name="shipping"
+                                            value="gig"
+                                            checked={selectedShipping === "gig"}
+                                            onChange={() => setSelectedShipping("gig")}
+                                            className="h-4 w-4 text-primary focus:ring-primary"
+                                        />
                                         <div>
                                             <p className="font-bold text-text-light dark:text-text-dark">GIG Logistics</p>
                                             <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark">Standard Delivery (3-5 Days)</p>
@@ -215,15 +214,45 @@ export default function CheckoutPage() {
                                     </div>
                                     <span className="font-bold text-text-light dark:text-text-dark">₦2,500.00</span>
                                 </label>
-                                <label className="flex items-center justify-between p-4 rounded-lg border border-border-light dark:border-border-dark hover:border-primary cursor-pointer transition-colors">
+                                <label className={cn(
+                                    "flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors",
+                                    selectedShipping === "topship" ? "border-primary bg-primary/5" : "border-border-light dark:border-border-dark hover:border-primary"
+                                )}>
                                     <div className="flex items-center gap-3">
-                                        <input type="radio" name="shipping" className="h-4 w-4 text-primary focus:ring-primary" />
+                                        <input
+                                            type="radio"
+                                            name="shipping"
+                                            value="topship"
+                                            checked={selectedShipping === "topship"}
+                                            onChange={() => setSelectedShipping("topship")}
+                                            className="h-4 w-4 text-primary focus:ring-primary"
+                                        />
                                         <div>
                                             <p className="font-bold text-text-light dark:text-text-dark">TopShip Express</p>
                                             <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark">Next Day Delivery</p>
                                         </div>
                                     </div>
                                     <span className="font-bold text-text-light dark:text-text-dark">₦4,500.00</span>
+                                </label>
+                                <label className={cn(
+                                    "flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors",
+                                    selectedShipping === "direct" ? "border-primary bg-primary/5" : "border-border-light dark:border-border-dark hover:border-primary"
+                                )}>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="radio"
+                                            name="shipping"
+                                            value="direct"
+                                            checked={selectedShipping === "direct"}
+                                            onChange={() => setSelectedShipping("direct")}
+                                            className="h-4 w-4 text-primary focus:ring-primary"
+                                        />
+                                        <div>
+                                            <p className="font-bold text-text-light dark:text-text-dark">Direct from Seller</p>
+                                            <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark">Arranged directly with the farmer. Best for bulk.</p>
+                                        </div>
+                                    </div>
+                                    <span className="font-bold text-text-light dark:text-text-dark">Negotiated</span>
                                 </label>
                             </div>
                         </div>
@@ -470,6 +499,13 @@ export default function CheckoutPage() {
                                                 </div>
                                                 <div className="flex flex-1 items-end justify-between text-sm">
                                                     <p className="text-secondary-text-light dark:text-secondary-text-dark">Qty {item.quantity}</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeItem(item.id)}
+                                                        className="font-medium text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300"
+                                                    >
+                                                        Remove
+                                                    </button>
                                                 </div>
                                             </div>
                                         </li>
@@ -482,7 +518,9 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <dt className="text-sm text-secondary-text-light dark:text-secondary-text-dark">Shipping</dt>
-                                        <dd className="text-sm font-medium text-text-light dark:text-text-dark"><PriceTag amount={shippingCost} currency="NGN" /></dd>
+                                        <dd className="text-sm font-medium text-text-light dark:text-text-dark">
+                                            {shippingCost === 0 ? "Negotiated" : <PriceTag amount={shippingCost} currency="NGN" />}
+                                        </dd>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <dt className="text-sm text-secondary-text-light dark:text-secondary-text-dark">Taxes</dt>
