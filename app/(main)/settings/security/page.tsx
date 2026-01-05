@@ -98,6 +98,30 @@ export default function SecurityPage() {
         }
     };
 
+    const handleDisable2FA = async () => {
+        const code = prompt("Enter a code from your authenticator app to confirm disabling 2FA:");
+        if (!code) return;
+
+        try {
+            const res = await fetch('/api/auth/2fa/disable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                alert('2FA has been disabled successfully');
+                setIs2faEnabled(false);
+            } else {
+                alert(data.error || 'Failed to disable 2FA');
+            }
+        } catch (error) {
+            alert('Error disabling 2FA');
+        }
+    };
+
     const confirm2faSetup = async () => {
         try {
             const res = await fetch('/api/auth/2fa/verify', {

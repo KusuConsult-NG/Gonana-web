@@ -11,6 +11,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@sentry/nextjs": "^10.32.1",
+    "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "ethers": "^6.16.0",
@@ -28,6 +29,7 @@
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
     "react-hot-toast": "^2.6.0",
+    "speakeasy": "^2.0.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
