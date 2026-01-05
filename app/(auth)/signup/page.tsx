@@ -32,6 +32,19 @@ export default function SignupPage() {
             alert("Passwords don't match!");
             return;
         }
+
+        // Strict Validation
+        const ageNum = parseInt(formData.age);
+        if (isNaN(ageNum) || ageNum < 18) {
+            alert("You must be at least 18 years old to join.");
+            return;
+        }
+
+        if (formData.gender !== "Male" && formData.gender !== "Female") {
+            alert("Please select a valid gender (Male or Female).");
+            return;
+        }
+
         if (!formData.agreeToTerms) {
             alert("Please agree to the terms and conditions");
             return;
@@ -201,23 +214,28 @@ export default function SignupPage() {
                                 label="Age"
                                 placeholder="30"
                                 value={formData.age}
-                                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (val < 0) return; // Prevent negative input
+                                    setFormData({ ...formData, age: e.target.value });
+                                }}
                                 required
                                 min={18}
+                                helperText="Must be 18 or older"
                             />
                             <div>
                                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">
                                     Gender
                                 </label>
                                 <select
-                                    className="block w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-gray-800 text-text-light dark:text-text-dark shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm py-2.5 px-3 outline-none"
+                                    className="block w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-gray-800 text-text-light dark:text-text-dark shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm py-2.5 px-3 outline-none transition-colors"
                                     value={formData.gender}
                                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                    required
                                 >
+                                    <option value="" disabled>Select Gender</option>
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                    <option value="Prefer not to say">Prefer not to say</option>
                                 </select>
                             </div>
                         </div>

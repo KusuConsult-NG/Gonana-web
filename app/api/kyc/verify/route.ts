@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { adminDb, verifyIdToken } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import { prembly } from '@/lib/prembly';
 import { generateWalletForUser } from '@/lib/crypto/walletGenerator';
 import { checkRateLimit } from '@/lib/rateLimit';
@@ -15,14 +17,12 @@ const DOC_TYPE_MAPPING: Record<string, "NIN" | "BVN" | "DRIVERS_LICENSE" | "PASS
 export async function POST(req: Request) {
     try {
         // 1. Verify Authentication
-        const authHeader = req.headers.get('Authorization');
-        if (!authHeader?.startsWith('Bearer ')) {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user || !session.user.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const token = authHeader.split('Bearer ')[1];
-        const decodedToken = await verifyIdToken(token);
-        const userId = decodedToken.uid;
+        const userId = session.user.id;
 
         // 2. Rate Limit
         const forwardedFor = req.headers.get('x-forwarded-for');

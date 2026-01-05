@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { userId, items, paymentMethod, shippingMethod, walletCurrency, network } = body;
-
-        if (!userId) {
-            return NextResponse.json({ error: "User ID required" }, { status: 400 });
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user || !session.user.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const userId = session.user.id;
+        const body = await req.json();
+        const { items, paymentMethod, shippingMethod, walletCurrency, network } = body;
 
         if (!items || items.length === 0) {
             return NextResponse.json({ error: "Cart is empty" }, { status: 400 });

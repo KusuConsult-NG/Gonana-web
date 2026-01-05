@@ -38,15 +38,15 @@ export default function RootLayout({
           merriweather.variable
         )}
       >
-        <AuthProvider>
-          <NextAuthProvider>
+        <NextAuthProvider>
+          <AuthProvider>
             <WalletProvider>
               <CartProvider>
                 {children}
               </CartProvider>
             </WalletProvider>
-          </NextAuthProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </NextAuthProvider>
         {/* Paystack Inline Script */}
         <script src="https://js.paystack.co/v1/inline.js" async></script>
       </body>

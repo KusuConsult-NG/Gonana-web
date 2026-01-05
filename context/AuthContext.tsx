@@ -1,15 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import {
-    User,
-    signInWithEmailAndPassword,
-    signOut as firebaseSignOut,
-    onAuthStateChanged,
-    signInWithCustomToken
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { User } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
 
 interface AuthContextType {
     user: User | null;
@@ -22,23 +16,61 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    const { data: session, status } = useSession();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
-        // Listen for auth state changes
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
-            setLoading(false);
-        });
+        if (status === "loading") {
+            setLoading(true);
+            return;
+        }
 
-        return () => unsubscribe();
-    }, []);
+        if (session?.user) {
+            // Map NextAuth session to a Firebase-like User object for compatibility
+            setUser({
+                uid: session.user.id || "",
+                email: session.user.email || "",
+                displayName: session.user.name || "",
+                photoURL: session.user.image || "",
+                emailVerified: true, // Assuming NextAuth verified it
+                isAnonymous: false,
+                metadata: {},
+                providerData: [],
+                refreshToken: "",
+                tenantId: "",
+                delete: async () => { },
+                getIdToken: async () => "mock-token", // In a real app, this would get a custom token
+                getIdTokenResult: async () => ({
+                    token: "mock-token",
+                    signInProvider: "custom",
+                    claims: {},
+                    authTime: new Date().toISOString(),
+                    issuedAtTime: new Date().toISOString(),
+                    expirationTime: new Date().toISOString(),
+                }),
+                reload: async () => { },
+                toJSON: () => ({}),
+            } as unknown as User);
+        } else {
+            setUser(null);
+        }
+        setLoading(false);
+    }, [session, status]);
 
     const signIn = async (email: string, password: string) => {
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const result = await nextAuthSignIn("credentials", {
+                redirect: false,
+                email,
+                password
+            });
+
+            if (result?.error) {
+                throw new Error(result.error);
+            }
+
             router.push('/');
         } catch (error) {
             console.error('Sign in error:', error);
@@ -47,19 +79,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const signInWithToken = async (token: string) => {
-        try {
-            await signInWithCustomToken(auth, token);
-            router.push('/');
-        } catch (error) {
-            console.error('Token sign in error:', error);
-            throw error;
-        }
+        // Not used with NextAuth flow, but keeping for interface compatibility
+        console.warn("signInWithToken not supported in NextAuth mode");
     };
 
     const signOut = async () => {
         try {
-            await firebaseSignOut(auth);
-            router.push('/login');
+            await nextAuthSignOut({ redirect: true, callbackUrl: "/login" });
         } catch (error) {
             console.error('Sign out error:', error);
             throw error;
