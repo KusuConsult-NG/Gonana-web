@@ -61,19 +61,9 @@ export default function SignupPage() {
                 return;
             }
 
-            // Then, automatically sign in the user
-            const result = await signIn("credentials", {
-                email: formData.email,
-                password: formData.password,
-                redirect: false,
-            });
-
-            if (result?.ok) {
-                router.push("/"); // Redirect to marketplace home
-            } else {
-                alert("Account created but login failed. Please try logging in manually.");
-                router.push("/login");
-            }
+            // Account created successfully! Redirect to login
+            alert('Account created successfully! Please log in.');
+            router.push('/login');
         } catch (error) {
             console.error("Signup error:", error);
             alert("An error occurred during signup");

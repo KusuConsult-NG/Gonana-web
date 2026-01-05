@@ -102,17 +102,25 @@ export default function LoginPage() {
                             e.preventDefault();
                             const email = e.currentTarget.email.value;
                             const password = e.currentTarget.password.value;
-                            const result = await signIn("credentials", {
-                                email,
-                                password,
-                                redirect: false,
-                            });
 
-                            if (result?.ok) {
-                                setLoginError("");
-                                router.push("/"); // Redirect to marketplace home
-                            } else {
-                                setLoginError("Invalid email or password");
+                            try {
+                                // Call login API
+                                const response = await fetch('/api/login', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ email, password }),
+                                });
+
+                                const data = await response.json();
+
+                                if (response.ok) {
+                                    setLoginError("");
+                                    router.push("/"); // Redirect to marketplace
+                                } else {
+                                    setLoginError(data.error || "Invalid email or password");
+                                }
+                            } catch (error) {
+                                setLoginError("An error occurred during login");
                             }
                         }}>
                             {loginError && <p className="text-red-500 text-sm text-center">{loginError}</p>}
