@@ -7,8 +7,11 @@ import { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { useAuth } from "@/context/AuthContext";
 
-export function Navbar() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+interface NavbarProps {
+    onMenuClick: () => void;
+}
+
+export function Navbar({ onMenuClick }: NavbarProps) {
     const [theme, setTheme] = useState<"light" | "dark">("light");
     const { isKycVerified, balances, formatPrice } = useWallet();
     const { user, signOut } = useAuth();
@@ -28,132 +31,88 @@ export function Navbar() {
     };
 
     return (
-        <nav className="sticky top-0 z-50 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark backdrop-blur-md bg-opacity-80 dark:bg-opacity-80">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md">
+            <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
-                    {/* Logo and Search */}
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="flex-shrink-0 flex items-center gap-2">
-                            <div className="relative w-8 h-8">
-                                <Image
-                                    src="/logo.png"
-                                    alt="Gonana Logo"
-                                    fill
-                                    className="object-contain"
-                                    priority
-                                />
-                            </div>
-                            <span className="font-display font-bold text-xl text-text-light dark:text-text-dark hidden sm:block">Gonana</span>
-                        </Link>
+                    {/* Left: Mobile Menu & Search */}
+                    <div className="flex items-center gap-4 flex-1">
+                        <button
+                            className="md:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                            onClick={onMenuClick}
+                        >
+                            <Menu className="h-6 w-6" />
+                        </button>
 
-                        <div className="hidden md:flex items-center gap-6">
-                            <Link href="/marketplace" className="text-sm font-medium text-text-light dark:text-text-dark hover:text-primary transition-colors">Marketplace</Link>
-                            <Link href="/sell" className="text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Sell</Link>
-                            <Link href="/feed" className="text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Community</Link>
-                            <Link href="/logistics" className="text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Logistics</Link>
-                        </div>
-
-                        <div className="hidden lg:block relative w-64">
+                        <div className="relative w-full max-w-md hidden sm:block">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-4 w-4 text-gray-400" />
                             </div>
                             <input
                                 type="text"
-                                placeholder="Search products..."
-                                className="block w-full pl-10 pr-3 py-1.5 border border-border-light dark:border-border-dark rounded-full bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
+                                placeholder="Search products, farmers..."
+                                className="block w-full pl-10 pr-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-full bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
                             />
                         </div>
                     </div>
 
                     {/* Right Side Icons */}
-                    <div className="flex items-center gap-3">
-                        <button className="p-2 rounded-full hover:bg-background-light dark:hover:bg-border-dark transition-colors relative group">
-                            <Bell className="h-5 w-5 text-secondary-text-light dark:text-secondary-text-dark" />
-                            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500"></span>
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        {/* Search icon for mobile */}
+                        <button className="sm:hidden p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                            <Search className="h-5 w-5" />
+                        </button>
+
+                        <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative group text-gray-500 dark:text-gray-400">
+                            <Bell className="h-5 w-5" />
+                            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900"></span>
                         </button>
 
                         {isKycVerified ? (
-                            <Link href="/wallet" className="hidden sm:flex items-center bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-full px-3 py-1.5 gap-2 cursor-pointer hover:border-primary transition-colors">
+                            <Link href="/wallet" className="hidden md:flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1.5 gap-2 hover:border-primary transition-colors">
                                 <Wallet className="h-4 w-4 text-primary" />
                                 <div className="flex flex-col text-xs leading-none">
-                                    <span className="font-bold text-text-light dark:text-text-dark">{formatPrice(balances.NGN, "NGN")}</span>
-                                    <span className="text-secondary-text-light dark:text-secondary-text-dark text-[10px]">
-                                        {formatPrice(balances.USD + balances.USDT + balances.USDC, "USD")} (Total USD)
-                                    </span>
+                                    <span className="font-bold text-gray-900 dark:text-white">{formatPrice(balances.NGN, "NGN")}</span>
+                                    {/* <span className="text-gray-500 text-[10px]">Total Bal</span> */}
                                 </div>
                             </Link>
                         ) : (
-                            <Link href={user ? "/kyc" : "/login"} className="hidden sm:flex text-sm font-medium text-primary border border-primary px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors">
-                                Verify Identity (KYC)
+                            <Link href={user ? "/kyc" : "/login"} className="hidden md:flex text-xs font-medium text-primary border border-primary px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-colors">
+                                Verify Identity
                             </Link>
                         )}
 
-                        <Link href="/cart" className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 relative">
+                        <Link href="/cart" className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full relative transition-colors">
                             <ShoppingCart className="h-5 w-5" />
-                            <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+                            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900"></span>
                         </Link>
 
                         <button
                             onClick={toggleTheme}
-                            className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                         >
                             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                         </button>
 
-                        {user ? (
-                            <button
-                                onClick={handleLogout}
-                                className="h-8 w-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-600 font-bold cursor-pointer hover:bg-red-500/30 transition-colors border border-red-500/30"
-                                title="Logout"
-                            >
-                                <LogOut className="h-4 w-4" />
-                            </button>
-                        ) : (
-                            <Link href="/login" className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold cursor-pointer overflow-hidden border border-primary/30">
-                                <User className="h-5 w-5" />
-                            </Link>
-                        )}
+                        <div className="hidden md:block w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
-                        <button
-                            className="md:hidden p-2 text-gray-500 hover:text-primary transition-colors"
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        >
-                            <Menu className="h-6 w-6" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {user ? (
+                                <div className="text-right hidden lg:block">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white leading-none">{user.name?.split(' ')[0]}</p>
+                                    <p className="text-xs text-gray-500 truncate max-w-[100px]">{user.email}</p>
+                                </div>
+                            ) : null}
+                            <Link href={user ? "/settings" : "/login"} className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
+                                {user?.image ? (
+                                    <Image src={user.image} alt="Profile" width={32} height={32} className="object-cover h-full w-full" />
+                                ) : (
+                                    <User className="h-5 w-5 text-primary" />
+                                )}
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            {/* Mobile Menu */}
-            {isMenuOpen && (
-                <div className="md:hidden bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark px-4 pt-4 pb-6 space-y-4 shadow-xl">
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Search Gonana..."
-                            className="block w-full pl-10 pr-3 py-2 border border-border-light dark:border-border-dark rounded-xl bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Link href="/marketplace" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-lg text-base font-medium text-text-light dark:text-text-light hover:text-primary hover:bg-primary/5 transition-colors">
-                            Marketplace
-                        </Link>
-                        <Link href="/sell" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-lg text-base font-medium text-text-light dark:text-text-light hover:text-primary hover:bg-primary/5 transition-colors">
-                            Sell (List Product)
-                        </Link>
-                        <Link href="/feed" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-lg text-base font-medium text-text-light dark:text-text-light hover:text-primary hover:bg-primary/5 transition-colors">
-                            Community Feed
-                        </Link>
-                        <Link href="/logistics" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-lg text-base font-medium text-text-light dark:text-text-light hover:text-primary hover:bg-primary/5 transition-colors">
-                            Logistics
-                        </Link>
-                    </div>
-                </div>
-            )}
         </nav>
     );
 }
