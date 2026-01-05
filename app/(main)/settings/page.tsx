@@ -7,7 +7,7 @@ import { Camera, Save } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function ProfileSettingsPage() {
-    const { data: session } = useSession();
+    const { data: session, update } = useSession();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [formData, setFormData] = useState({
@@ -116,8 +116,17 @@ export default function ProfileSettingsPage() {
             });
 
             if (res.ok) {
+                const updatedUser = await res.json();
+
+                // Update NextAuth session to reflect changes immediately
+                await update({
+                    name: updatedUser.name,
+                    image: updatedUser.image,
+                    // Force a trigger event if needed
+                    trigger: "update"
+                });
+
                 alert("Profile updated successfully!");
-                // Ideally refresh session here too if name changed
             } else {
                 throw new Error("Failed to update");
             }
