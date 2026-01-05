@@ -20,13 +20,19 @@ export default function CheckoutPage() {
     const [selectedWalletCurrency, setSelectedWalletCurrency] = useState<"NGN" | "USDT" | "USDC" | "ETH" | "BNB" | "MATIC">("USDT");
     const [selectedNetwork, setSelectedNetwork] = useState<"ethereum" | "polygon" | "bsc">("polygon"); // Default to Polygon (cheapest)
     const [isProcessing, setIsProcessing] = useState(false);
-    const [deliveryMethod, setDeliveryMethod] = useState<"logistics" | "pickup">("logistics"); // New state for delivery method
-    const [shippingAddress, setShippingAddress] = useState("Farm #42, Agadez Region, Niger"); // Mock address for now
+    const [shippingData, setShippingData] = useState({
+        fullName: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        postalCode: ""
+    });
 
     const { items, subtotal, clearCart } = useCart();
 
     // Derived state
-    const shippingCost = deliveryMethod === "logistics" ? 2500 : 0; // Simplified logic mapping to API
+    const shippingCost = 2500; // Simplified logic mapping to API
     const tax = subtotal * 0.05;
     const total = subtotal + shippingCost + tax;
 
