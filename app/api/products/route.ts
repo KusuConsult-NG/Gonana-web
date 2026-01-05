@@ -1,48 +1,41 @@
-
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
-    // TODO: Re-enable Firebase auth check
-    // const session = await getServerSession(authOptions);
-
-    // if (!session || !session.user?.email) {
-    //     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-
-    // For now, use a test user
-    const testUserEmail = "test@gonana.com";
-
     try {
         const body = await req.json();
         const { name, description, price, quantity, unit, location, category, deliveryMode, images } = body;
 
-        // Find user by email to get ID (Adapter uses IDs)
-        const user = await prisma.user.findUnique({
-            where: { email: testUserEmail }
-        });
+        // For now, create products without auth (will add Firebase auth later)
+        // TODO: Get actual user ID from Firebase Auth token
+        const sellerId = "anonymous";
+        const sellerName = "Test Seller";
 
-        if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+        const productData = {
+            sellerId,
+            sellerName,
+            name,
+            description,
+            price: parseFloat(price),
+            quantity: parseFloat(quantity),
+            unit,
+            location,
+            category: category || "General",
+            deliveryMode: deliveryMode || "logistics",
+            images: images || [],
+            currency: "NGN",
+            isApproved: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
 
-        const product = await prisma.product.create({
-            data: {
-                sellerId: user.id,
-                name,
-                description,
-                price: parseFloat(price),
-                quantity: parseFloat(quantity),
-                unit,
-                location,
-                category,
-                deliveryMode,
-                images: JSON.stringify(images), // Store as JSON string
-                currency: "NGN", // Default
-            },
-        });
+        // Add to Firestore
+        const productRef = await adminDb.collection('products').add(productData);
 
-        return NextResponse.json(product, { status: 201 });
+        return NextResponse.json({
+            id: productRef.id,
+            ...productData
+        }, { status: 201 });
     } catch (error) {
         console.error("Product creation error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -51,12 +44,19 @@ export async function POST(req: Request) {
 
 export async function GET() {
     try {
-        const products = await prisma.product.findMany({
-            orderBy: { createdAt: "desc" },
-            include: { seller: { select: { name: true } } }
-        });
+        const productsSnapshot = await adminDb
+            .collection('products')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        const products = productsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
         return NextResponse.json(products);
-    } catch {
+    } catch (error) {
+        console.error("Products fetch error:", error);
         return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
     }
 }
