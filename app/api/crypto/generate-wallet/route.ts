@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb, verifyIdToken } from '@/lib/firebase-admin';
 import { generateWalletForUser } from '@/lib/crypto/walletGenerator';
-import { checkRateLimit, getIdentifier, createRateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 /**
  * API to generate crypto wallet after KYC completion
@@ -20,17 +20,12 @@ export async function POST(req: Request) {
         const userId = decodedToken.uid;
 
         // Apply rate limiting
-        const rateLimitResult = checkRateLimit(
-            getIdentifier(req, userId),
-            RATE_LIMITS.AUTHENTICATION
-        );
+        const forwardedFor = req.headers.get('x-forwarded-for');
+        const ip = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
+        const rl = await checkRateLimit(ip, 'crypto');
 
-        if (!rateLimitResult.allowed) {
-            const response = createRateLimitResponse(rateLimitResult);
-            return NextResponse.json(response.body, {
-                status: response.status,
-                headers: response.headers
-            });
+        if (!rl.success) {
+            return NextResponse.json({ error: rl.reason || "Too many requests" }, { status: 429 });
         }
 
         // Check user exists and is KYC verified

@@ -26,7 +26,7 @@ export default function WithdrawForm({ onSuccess }: { onSuccess?: () => void }) 
         if (currency === "BNB") setNetwork("bsc");
         if (currency === "MATIC") setNetwork("polygon");
         if ((currency === "USDT" || currency === "USDC") && network === "bsc") setNetwork("ethereum"); // Default to ETH for stablecoins
-    }, [currency]);
+    }, [currency, network]);
 
     const getMaxAmount = () => {
         return balances[currency] || 0;
