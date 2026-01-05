@@ -4,7 +4,7 @@ import { MessageCircle, Heart, Share2, Image as ImageIcon, Send, MoreHorizontal,
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
@@ -72,9 +72,10 @@ export default function CommunityPage() {
         }
     };
 
-    const fetchUserBio = async () => {
+    const fetchUserBio = useCallback(async () => {
+        if (!session?.user?.id) return;
         try {
-            const res = await fetch(`/api/users/${session?.user?.id}`);
+            const res = await fetch(`/api/users/${session.user.id}`);
             if (res.ok) {
                 const data = await res.json();
                 setUserBio(data.bio || "Passionate about sustainable agriculture. 🌾");
@@ -83,7 +84,7 @@ export default function CommunityPage() {
             console.error("Failed to fetch user bio:", error);
             setUserBio("Passionate about sustainable agriculture. 🌾");
         }
-    };
+    }, [session?.user?.id]);
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -188,6 +189,7 @@ export default function CommunityPage() {
                 // Refresh comments for this post
                 await fetchCommentsForPost(commentingOnPost);
                 setCommentContent('');
+                setCommentingOnPost(null); // Close modal
                 toast.success('Comment posted!');
 
                 // Update comment count in posts

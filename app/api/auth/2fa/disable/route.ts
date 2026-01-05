@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebase-admin";
+import speakeasy from "speakeasy";
 
 /**
  * POST /api/auth/2fa/disable
@@ -47,9 +48,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Verify the code (you'd use speakeasy or similar library)
-        // For now, a simplified check
-        const speakeasy = require('speakeasy');
-
+        // Verify the code with speakeasy
         const verified = speakeasy.totp.verify({
             secret: userData.twoFactorSecret,
             encoding: 'base32',

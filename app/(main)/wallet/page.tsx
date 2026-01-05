@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { useRouter } from "next/navigation";
 import WithdrawForm from "@/components/wallet/WithdrawForm";
 import DepositForm from "@/components/wallet/DepositForm";
@@ -190,7 +191,7 @@ export default function WalletPage() {
                                 <div className="space-y-4">
                                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                         <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wider mb-1">Bank Name</p>
-                                        <p className="font-bold text-text-light dark:text-text-dark">Gonana Virtual Bank</p>
+                                        <p className="font-bold text-text-light dark:text-text-dark">{virtualAccount?.bankName || 'Gonana Virtual Bank'}</p>
                                     </div>
                                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                         <p className="text-xs text-secondary-text-light dark:text-secondary-text-dark uppercase tracking-wider mb-1">Account Number</p>

@@ -91,7 +91,7 @@ export default function NotificationsPage() {
         if (!acc[group]) acc[group] = [];
         acc[group].push(notification);
         return acc;
-    }, {} as Record<string, typeof MOCK_NOTIFICATIONS>);
+    }, {} as Record<string, any[]>);
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

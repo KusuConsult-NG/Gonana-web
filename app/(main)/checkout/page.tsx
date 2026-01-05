@@ -56,6 +56,12 @@ export default function CheckoutPage() {
             return;
         }
 
+        // Validate shipping data
+        if (!shippingData.fullName || !shippingData.phone || !shippingData.address || !shippingData.city || !shippingData.state) {
+            alert("Please fill in all required shipping information (Name, Phone, Address, City, State)");
+            return;
+        }
+
         setIsProcessing(true);
 
         try {
