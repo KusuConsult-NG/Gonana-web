@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 import { WalletProvider } from "@/context/WalletContext";
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 import { CartProvider } from "@/context/CartContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export default function RootLayout({
   children,
@@ -37,13 +38,15 @@ export default function RootLayout({
           merriweather.variable
         )}
       >
-        <NextAuthProvider>
-          <WalletProvider>
-            <CartProvider>
-              {children}
-            </CartProvider>
-          </WalletProvider>
-        </NextAuthProvider>
+        <AuthProvider>
+          <NextAuthProvider>
+            <WalletProvider>
+              <CartProvider>
+                {children}
+              </CartProvider>
+            </WalletProvider>
+          </NextAuthProvider>
+        </AuthProvider>
         {/* Paystack Inline Script */}
         <script src="https://js.paystack.co/v1/inline.js" async></script>
       </body>

@@ -2,19 +2,29 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Search, ShoppingCart, User, Moon, Sun, Menu, Bell, Wallet } from "lucide-react";
+import { Search, ShoppingCart, User, Moon, Sun, Menu, Bell, Wallet, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
+import { useAuth } from "@/context/AuthContext";
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [theme, setTheme] = useState<"light" | "dark">("light");
     const { isKycVerified, balances, formatPrice } = useWallet();
+    const { user, signOut } = useAuth();
 
     const toggleTheme = () => {
         const newTheme = theme === "light" ? "dark" : "light";
         setTheme(newTheme);
         document.documentElement.classList.toggle("dark");
+    };
+
+    const handleLogout = async () => {
+        try {
+            await signOut();
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
     };
 
     return (
@@ -90,9 +100,19 @@ export function Navbar() {
                             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                         </button>
 
-                        <Link href="/settings" className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold cursor-pointer overflow-hidden border border-primary/30">
-                            <User className="h-5 w-5" />
-                        </Link>
+                        {user ? (
+                            <button
+                                onClick={handleLogout}
+                                className="h-8 w-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-600 font-bold cursor-pointer hover:bg-red-500/30 transition-colors border border-red-500/30"
+                                title="Logout"
+                            >
+                                <LogOut className="h-4 w-4" />
+                            </button>
+                        ) : (
+                            <Link href="/login" className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold cursor-pointer overflow-hidden border border-primary/30">
+                                <User className="h-5 w-5" />
+                            </Link>
+                        )}
 
                         <button
                             className="md:hidden p-2 text-gray-500 hover:text-primary transition-colors"
