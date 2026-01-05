@@ -41,12 +41,10 @@ export default function CommunityPage() {
     useEffect(() => {
         fetchPosts();
         fetchTrendingTopics();
-        if (session?.user?.id) {
-            fetchUserBio();
-        }
-    }, [session]);
+        fetchUserBio();
+    }, [fetchPosts, fetchTrendingTopics, fetchUserBio]);
 
-    const fetchPosts = async () => {
+    const fetchPosts = useCallback(async () => {
         try {
             const res = await fetch("/api/posts");
             if (res.ok) {
@@ -58,9 +56,9 @@ export default function CommunityPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const fetchTrendingTopics = async () => {
+    const fetchTrendingTopics = useCallback(async () => {
         try {
             const res = await fetch("/api/trending");
             if (res.ok) {
@@ -70,7 +68,7 @@ export default function CommunityPage() {
         } catch (error) {
             console.error("Failed to fetch trending:", error);
         }
-    };
+    }, []);
 
     const fetchUserBio = useCallback(async () => {
         if (!session?.user?.id) return;

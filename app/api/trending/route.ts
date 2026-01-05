@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
             const content = doc.data().content || '';
             const hashtags = content.match(/#\w+/g) || [];
 
-            hashtags.forEach(tag => {
+            hashtags.forEach((tag: string) => {
                 const normalized = tag.toLowerCase();
                 hashtagCounts[normalized] = (hashtagCounts[normalized] || 0) + 1;
             });
