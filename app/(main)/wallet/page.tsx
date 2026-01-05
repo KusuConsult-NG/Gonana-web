@@ -1,7 +1,7 @@
 "use client";
 
 import { useWallet } from "@/context/WalletContext";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
     CreditCard, Wallet, ArrowRight, ShieldCheck, AlertTriangle,
     Download, TrendingUp, ArrowUpRight, ArrowDownLeft,

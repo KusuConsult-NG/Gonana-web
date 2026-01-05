@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Bell, ShoppingBag, Mail, Wallet, Settings as SettingsIcon, X, Check, Package, MessageCircle, TrendingUp, AlertCircle } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
@@ -8,70 +8,29 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { formatDistanceToNow } from "date-fns";
 
-// Mock notifications data
-const MOCK_NOTIFICATIONS = [
-    {
-        id: "1",
-        type: "order" as const,
-        title: "Order #4829 has been shipped",
-        message: 'Your shipment of 20kg Organic Avocados is on its way. Track your package now.',
-        read: false,
-        createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-        actionUrl: "/orders/4829",
-        actionLabel: "Track Order",
-        icon: Package,
-        color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30",
-    },
-    {
-        id: "2",
-        type: "wallet" as const,
-        title: "Payment Received",
-        message: "You received 0.45 ETH (~$1,200) from Buyer @EcoFarmLtd.",
-        read: false,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        icon: Wallet,
-        color: "text-green-600 bg-green-100 dark:bg-green-900/30",
-    },
-    {
-        id: "3",
-        type: "message" as const,
-        title: "Sarah from GreenGrocer sent a message",
-        message: "Hi John, are the macadamia nuts still available for bulk purchase? I'm looking to buy about 50kg next week...",
-        read: false,
-        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        actionUrl: "/messages/sarah",
-        actionLabel: "Reply",
-        icon: MessageCircle,
-        color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCcy1v0aGmKJnDJHW1JQ4uGNh3zvMWjJOQsWBqafL7tDEc2vMbE3yVPPsZSYwAb49CvZ5OjX0qPEemYQooTrRPOXKcGkE0uNtGasGNNNylz4ce_NRjSLpkDI25C-C8W2AUK_QTT5Kn6hpghFNquu1yf0wec5QgmssBLKspTZI1xFVpSlob1BDpkPUtVWT677hMHX0OW7zCi98v-dm68xFjznOCYjPL1HtRnuoz_QK765CPYV92LJ2gsbHwNrYfUEgOw-dfFlja9mePk",
-    },
-    {
-        id: "4",
-        type: "feed" as const,
-        title: "Your post is trending",
-        message: "Your update on \"Sustainable Farming Practices\" has reached 500 likes. Keep it up!",
-        read: true,
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        icon: TrendingUp,
-        color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30",
-    },
-    {
-        id: "5",
-        type: "system" as const,
-        title: "KYC Verification Pending",
-        message: "Please upload a clearer image of your ID document to complete your vendor verification.",
-        read: true,
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        actionUrl: "/kyc",
-        actionLabel: "Complete KYC",
-        icon: AlertCircle,
-        color: "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30",
-    },
-];
-
 export default function NotificationsPage() {
-    const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+    const [notifications, setNotifications] = useState<any[]>([]);
     const [filter, setFilter] = useState<"all" | "order" | "message" | "wallet" | "system">("all");
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch real notifications
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const res = await fetch('/api/notifications');
+                if (res.ok) {
+                    const data = await res.json();
+                    setNotifications(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch notifications:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchNotifications();
+    }, []);
 
     const unreadCount = notifications.filter((n) => !n.read).length;
     const orderCount = notifications.filter((n) => n.type === "order" && !n.read).length;
@@ -132,8 +91,8 @@ export default function NotificationsPage() {
                                     key={item.label}
                                     href={item.href}
                                     className={`flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${item.active
-                                            ? "bg-primary/10 text-primary"
-                                            : "text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark hover:text-primary"
+                                        ? "bg-primary/10 text-primary"
+                                        : "text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark hover:text-primary"
                                         }`}
                                 >
                                     <span className="mr-3 text-lg">{item.icon}</span>
@@ -216,8 +175,8 @@ export default function NotificationsPage() {
                                     key={tab.id}
                                     onClick={() => setFilter(tab.id as any)}
                                     className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${filter === tab.id
-                                            ? "border-primary text-primary"
-                                            : "border-transparent text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark hover:border-gray-300"
+                                        ? "border-primary text-primary"
+                                        : "border-transparent text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark hover:border-gray-300"
                                         }`}
                                 >
                                     {tab.label}
@@ -249,8 +208,8 @@ export default function NotificationsPage() {
                                             <div
                                                 key={notification.id}
                                                 className={`group relative bg-surface-light dark:bg-surface-dark p-4 rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer ${!notification.read
-                                                        ? "border-primary/30"
-                                                        : "border-border-light dark:border-border-dark opacity-80 hover:opacity-100"
+                                                    ? "border-primary/30"
+                                                    : "border-border-light dark:border-border-dark opacity-80 hover:opacity-100"
                                                     }`}
                                                 onClick={() => !notification.read && markAsRead(notification.id)}
                                             >
