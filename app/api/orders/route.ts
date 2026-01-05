@@ -1,116 +1,125 @@
-
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user?.email) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     try {
         const body = await req.json();
-        const { items, logistics: _logistics, paymentMethod, paymentReference, walletCurrency } = body;
+        const { userId, items, paymentMethod, shippingMethod } = body;
 
-        // 1. Calculate Total & Verify Stock
-        let calculatedTotal = 0;
-        const orderItemsData: any[] = []; // Using any[] to bypass strict typing for MVP, but logically correct structure for Prisma
+        if (!userId) {
+            return NextResponse.json({ error: "User ID required" }, { status: 400 });
+        }
 
+        if (!items || items.length === 0) {
+            return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+        }
+
+        let totalAmount = 0;
+        const orderItems: any[] = [];
+
+        // Calculate total and verify products
         for (const item of items) {
-            const product = await prisma.product.findUnique({ where: { id: item.id } });
-            if (!product) throw new Error(`Product ${item.name} not found`);
+            const productDoc = await adminDb.collection('products').doc(item.id.toString()).get();
 
-            if (product.quantity < item.quantity) {
-                throw new Error(`Insufficient stock for ${product.name}`);
+            if (!productDoc.exists) {
+                return NextResponse.json({ error: `Product ${item.name} not found` }, { status: 404 });
             }
 
-            calculatedTotal += product.price * item.quantity;
-            orderItemsData.push({
-                product: { connect: { id: product.id } },
+            const product = productDoc.data()!;
+
+            if (product.quantity < item.quantity) {
+                return NextResponse.json({
+                    error: `Insufficient stock for ${product.name}`
+                }, { status: 400 });
+            }
+
+            totalAmount += product.price * item.quantity;
+            orderItems.push({
+                productId: item.id.toString(),
+                productName: product.name,
                 quantity: item.quantity,
-                price: product.price
+                price: product.price,
+                unit: product.unit || "kg"
             });
         }
 
-        // Add shipping cost (Mock logic)
-        const shippingCost = _logistics === "topship" ? 2500 : 1500;
-        calculatedTotal += shippingCost;
-        // Verify total matches client (allow small margin or just use server total)
+        // Add shipping cost
+        const shippingCost = shippingMethod === "logistics" ? 2500 : 0;
+        totalAmount += shippingCost;
 
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email },
-            include: { wallet: true }
+        // Get wallet
+        const walletRef = adminDb.collection('wallets').doc(userId);
+        const walletDoc = await walletRef.get();
+
+        if (!walletDoc.exists) {
+            return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+        }
+
+        const wallet = walletDoc.data()!;
+
+        // Check balance (assuming NGN for now)
+        if (wallet.balanceNGN < totalAmount) {
+            return NextResponse.json({
+                error: "Insufficient wallet balance"
+            }, { status: 400 });
+        }
+
+        // Create order
+        const orderData = {
+            buyerId: userId,
+            items: orderItems,
+            totalAmount,
+            shippingCost,
+            currency: "NGN",
+            status: "PAID",
+            paymentMethod: paymentMethod || "wallet",
+            paymentReference: `ORD-${Date.now()}`,
+            shippingMethod: shippingMethod || "logistics",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        const orderRef = await adminDb.collection('orders').add(orderData);
+
+        // Deduct from wallet
+        await walletRef.update({
+            balanceNGN: wallet.balanceNGN - totalAmount,
+            updatedAt: new Date().toISOString()
         });
 
-        if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+        // Log transaction
+        await adminDb.collection('transactions').add({
+            walletId: userId,
+            type: "PAYMENT",
+            amount: totalAmount,
+            currency: "NGN",
+            status: "COMPLETED",
+            reference: orderData.paymentReference,
+            description: `Order payment for ${orderItems.length} item(s)`,
+            createdAt: new Date().toISOString()
+        });
 
-        // 3. Process Payment
-        const result = await prisma.$transaction(async (tx: any) => {
-            // Handle Wallet Payment
-            if (paymentMethod === "wallet") {
-                if (!user.wallet) throw new Error("Wallet not found");
+        // Update product quantities
+        for (const item of orderItems) {
+            const productRef = adminDb.collection('products').doc(item.productId);
+            const productDoc = await productRef.get();
+            const product = productDoc.data()!;
 
-                // Assuming NGN for now, or use walletCurrency logic
-                if (user.wallet.balanceNGN < calculatedTotal) {
-                    throw new Error("Insufficient wallet funds");
-                }
-
-                await tx.wallet.update({
-                    where: { id: user.wallet.id },
-                    data: { balanceNGN: { decrement: calculatedTotal } }
-                });
-
-                await tx.walletTransaction.create({
-                    data: {
-                        walletId: user.wallet.id,
-                        type: "PAYMENT",
-                        amount: calculatedTotal,
-                        currency: "NGN",
-                        status: "COMPLETED",
-                        reference: `ORD-${Date.now()}`
-                    }
-                });
-            }
-            // Handle Paystack Payment (Already paid on client, we just record reference)
-            else if (paymentMethod === "paystack") {
-                if (!paymentReference) throw new Error("Missing payment reference");
-                // In a real app, verify reference with Paystack API here using secret key
-                // await verifyPaystack(paymentReference); 
-            }
-
-            // Create Order
-            const order = await tx.order.create({
-                data: {
-                    buyerId: user.id,
-                    totalAmount: calculatedTotal,
-                    currency: "NGN",
-                    status: "PAID",
-                    paymentReference: paymentReference || `WALLET-${Date.now()}`,
-                    paymentMethod: paymentMethod,
-                    items: {
-                        create: orderItemsData
-                    }
-                }
+            await productRef.update({
+                quantity: product.quantity - item.quantity,
+                updatedAt: new Date().toISOString()
             });
+        }
 
-            // Update Product Stock
-            for (const item of orderItemsData) {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: { quantity: { decrement: item.quantity } }
-                });
-            }
-
-            return order;
-        });
-
-        return NextResponse.json(result, { status: 201 });
+        return NextResponse.json({
+            orderId: orderRef.id,
+            ...orderData
+        }, { status: 201 });
 
     } catch (error: any) {
         console.error("Order creation error:", error);
-        return NextResponse.json({ error: error.message || "Order Failed" }, { status: 500 });
+        return NextResponse.json({
+            error: error.message || "Order failed"
+        }, { status: 500 });
     }
 }

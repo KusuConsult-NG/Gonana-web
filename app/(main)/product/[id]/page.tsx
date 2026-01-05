@@ -8,11 +8,13 @@ import { cn } from "@/lib/utils";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { useParams, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ProductPage() {
     const params = useParams();
     const router = useRouter();
     const { addItem } = useCart();
+    const { user } = useAuth();
 
     interface Product {
         id: string | number;
@@ -100,30 +102,52 @@ export default function ProductPage() {
     const handleBuyNow = async () => {
         if (!product) return;
 
-        // TODO: Get actual user from Firebase auth
-        const userId = "anonymous"; // Replace with actual user ID from auth context
+        if (!user) {
+            alert("Please log in to make a purchase");
+            router.push('/login');
+            return;
+        }
 
         const totalAmount = product.price * quantity;
+        const shippingCost = 2500; // Default logistics cost
 
         try {
-            // For MVP, just show confirmation and redirect
             const confirmed = confirm(
                 `Purchase ${quantity} ${product.unit} of ${product.name}\n\n` +
-                `Total: ₦${totalAmount.toLocaleString()}\n\n` +
+                `Product Price: ₦${totalAmount.toLocaleString()}\n` +
+                `Shipping Cost: ₦${shippingCost.toLocaleString()}\n` +
+                `Total: ₦${(totalAmount + shippingCost).toLocaleString()}\n\n` +
                 `Payment will be deducted from your wallet.\n\n` +
                 `Continue?`
             );
 
             if (!confirmed) return;
 
-            // Create order (would need to convert orders API to Firebase first)
-            alert("Order placed successfully! (Feature in development)");
+            // Create order via API
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: user.uid,
+                    items: [{
+                        id: product.id,
+                        name: product.name,
+                        quantity,
+                        price: product.price
+                    }],
+                    paymentMethod: 'wallet',
+                    shippingMethod: 'logistics'
+                })
+            });
 
-            // In production, this would:
-            // 1. Deduct from wallet
-            // 2. Create order in Firestore
-            // 3. Notify seller
-            // 4. Redirect to order confirmation
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(`Order placed successfully!\nOrder ID: ${data.orderId}\n\nYou can track your order in the Orders page.`);
+                router.push('/');
+            } else {
+                alert(`Order failed: ${data.error}`);
+            }
 
         } catch (error) {
             console.error("Purchase error:", error);
