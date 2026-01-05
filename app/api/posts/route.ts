@@ -29,21 +29,21 @@ export async function GET(req: Request) {
             return {
                 id: doc.id,
                 author: displayAuthor,
-                handle: "@" + (displayAuthor.replace /\s+/g, "").toLowerCase() || "user"),
-            time: new Date(post.createdAt).toLocaleDateString(),
+                handle: "@" + (displayAuthor.replace(/\s+/g, "").toLowerCase() || "user"),
+                time: new Date(post.createdAt).toLocaleDateString(),
                 content: post.content,
-                    image: post.image || null,
-                        likes: likesSnapshot.size,
-                            comments: commentsSnapshot.size,
-                                avatar: author?.image || "",
-                                    isLiked: false,
+                image: post.image || null,
+                likes: likesSnapshot.size,
+                comments: commentsSnapshot.size,
+                avatar: author?.image || "",
+                isLiked: false,
             };
-}));
+        }));
 
-return NextResponse.json(formattedPosts);
+        return NextResponse.json(formattedPosts);
     } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
-}
+        return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
+    }
 }
 
 export async function POST(req: Request) {
